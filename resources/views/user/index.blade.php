@@ -1,97 +1,8 @@
 @php
-    // --- STATIC DUMMY DATA FOR FRONT-END PRESENTATION ---
-    // In a real Laravel application, this data would be passed from the controller.
-
-    // Static Categories
-    $categories = [
-        ['id' => 10, 'category_name' => 'Laptops'],
-        ['id' => 11, 'category_name' => 'Computers'],
-        ['id' => 12, 'category_name' => 'Digital Cameras'],
-        ['id' => 13, 'category_name' => 'Cell Phones'],
-        ['id' => 14, 'category_name' => 'Smart TVs'],
-        ['id' => 15, 'category_name' => 'Audio'],
-    ];
-
-    // Static Products (Simplified)
-    $products_data = [
-        // Product 1: Hot & New (Category ID 13: Cell Phones)
-        [
-            'id' => 1,
-            'category_id' => 13,
-            'category_name' => 'Cell Phones',
-            'product_name' => 'iPhone 15 Pro Max',
-            'price' => 1199.0,
-            'isHot' => '1',
-            'created_at' => \Carbon\Carbon::now()->subDays(3),
-            'attachments' => ['products/iphone15.jpg'],
-        ],
-        // Product 2: Standard (Category ID 11: Computers)
-        [
-            'id' => 2,
-            'category_id' => 11,
-            'category_name' => 'Computers',
-            'product_name' => 'Gaming PC Tower',
-            'price' => 2499.99,
-            'isHot' => '0',
-            'created_at' => \Carbon\Carbon::now()->subDays(30),
-            'attachments' => ['products/pctower.jpg'],
-        ],
-        // Product 3: New only (Category ID 14: Smart TVs)
-        [
-            'id' => 3,
-            'category_id' => 14,
-            'category_name' => 'Smart TVs',
-            'product_name' => 'OLED 65 Inch TV',
-            'price' => 1999.0,
-            'isHot' => '0',
-            'created_at' => \Carbon\Carbon::now()->subHours(5),
-            'attachments' => ['products/tv.jpg'],
-        ],
-        // Product 4: Hot & Sale Price Simulation
-        [
-            'id' => 4,
-            'category_id' => 15,
-            'category_name' => 'Audio',
-            'product_name' => 'Noise Cancelling Headphones',
-            'price' => 249.99,
-            'isHot' => '1',
-            'created_at' => \Carbon\Carbon::now()->subDays(15),
-            'attachments' => ['products/headphones.jpg'],
-        ],
-        // Product 5: Standard
-        [
-            'id' => 5,
-            'category_id' => 16,
-            'category_name' => 'Smartwatches',
-            'product_name' => 'Smart Fitness Watch',
-            'price' => 129.5,
-            'isHot' => '0',
-            'created_at' => \Carbon\Carbon::now()->subDays(15),
-            'attachments' => ['products/watch.jpg'],
-        ],
-    ];
-
-    // Group products by Category ID for the carousel tabs (simulated logic)
-    $grouped_products = [];
-    foreach ($products_data as $product) {
-        $grouped_products[$product['category_id']][] = $product;
-    }
-
-    // Map the HTML tab IDs to the respective product groups (simulated logic)
-    $tabs = [
-        'new-all-tab' => $products_data,
-        'new-computers-tab' => $grouped_products[11] ?? [],
-        'new-tv-tab' => $grouped_products[14] ?? [],
-        'new-phones-tab' => $grouped_products[13] ?? [],
-        'new-watches-tab' => $grouped_products[16] ?? [],
-        'new-cameras-tab' => $grouped_products[12] ?? [],
-        'new-audio-tab' => $grouped_products[15] ?? [],
-    ];
-
-    // Dummy helper functions
+    // --- Helper functions for UI ---
     function format_price($price)
     {
-        return '$' . number_format((float) $price, 2, '.', ',');
+        return '$' . number_format($price, 2);
     }
 
     function get_rating_width()
@@ -103,8 +14,18 @@
     {
         return rand(2, 12);
     }
-@endphp
 
+    // --- Generate tab structure dynamically ---
+    $tabs = [
+        'new-all-tab' => $data['products'],
+    ];
+
+   foreach ($data['categories'] as $category) {
+    $key = 'new-' . strtolower(preg_replace('/[^a-z0-9]+/', '-', $category->category_name)) . '-tab';
+    $tabs[$key] = $data['grouped_products'][$category->id] ?? collect();
+}
+
+@endphp
 <!DOCTYPE html>
 <html lang="en">
 
@@ -130,7 +51,7 @@
     <div class="page-wrapper min-h-screen bg-gray-50">
         @include('user.component.header')
 
-
+      
 
         <main class="main">
             {{-- Introductory Slider Section --}}
@@ -187,10 +108,10 @@
                 <div class="cat-blocks-container">
                     <div class="row">
 
-                        @if (count($categories) > 0)
-                            @foreach ($categories as $category)
+                        @if (count($data['categories']) > 0)
+                            @foreach ($data['categories'] as $category)
                                 @php
-                                    $safe_category_name = htmlspecialchars($category['category_name']);
+                                    $safe_category_name = $category['category_name'];
                                     // Use a modulo operation to cycle through the dummy images
                                     $image_index = ($loop->index % 8) + 1; // Cycle 1 to 8
                                     $image_src = 'assets/images/demos/demo-4/cats/' . $image_index . '.png';
@@ -230,34 +151,23 @@
                                     <a class="nav-link active" id="new-all-link" data-toggle="tab" href="#new-all-tab"
                                         role="tab" aria-controls="new-all-tab" aria-selected="true">All</a>
                                 </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" id="new-tv-link" data-toggle="tab" href="#new-tv-tab"
-                                        role="tab" aria-controls="new-tv-tab" aria-selected="false">TV</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" id="new-computers-link" data-toggle="tab"
-                                        href="#new-computers-tab" role="tab" aria-controls="new-computers-tab"
-                                        aria-selected="false">Computers</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" id="new-phones-link" data-toggle="tab" href="#new-phones-tab"
-                                        role="tab" aria-controls="new-phones-tab" aria-selected="false">Tablets &
-                                        Cell Phones</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" id="new-watches-link" data-toggle="tab"
-                                        href="#new-watches-tab" role="tab" aria-controls="new-watches-tab"
-                                        aria-selected="false">Smartwatches</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" id="new-audio-link" data-toggle="tab" href="#new-audio-tab"
-                                        role="tab" aria-controls="new-audio-tab" aria-selected="false">Audio</a>
-                                </li>
-                                <li class="nav-item">
-                                    <a class="nav-link" id="new-cameras-link" data-toggle="tab"
-                                        href="#new-cameras-tab" role="tab" aria-controls="new-cameras-tab"
-                                        aria-selected="false">Digital Cameras</a>
-                                </li>
+                                @foreach ($data['categories'] as $category)
+                                    @php
+                                        $tabId = 'new-' . strtolower(preg_replace('/[^a-z0-9]+/', '-', $category->category_name)) . '-tab';
+
+                                    @endphp
+
+                                    <li class="nav-item">
+                                        <a class="nav-link" id="{{ $tabId }}-link" data-toggle="tab"
+                                            href="#{{ $tabId }}" role="tab"
+                                            aria-controls="{{ $tabId }}" aria-selected="false">
+                                            {{ $category->category_name }}
+                                        </a>
+                                    </li>
+                                @endforeach
+
+
+
                             </ul>
                         </div>
                     </div>
@@ -279,79 +189,83 @@
                                     data-toggle="owl"
                                     data-owl-options='{"nav": true, "dots": true, "margin": 20, "loop": false, "responsive": {"0": {"items":2}, "480": {"items":2}, "768": {"items":3}, "992": {"items":4}, "1200": {"items":5}}}'>
 
-                                    @foreach ($products as $product)
+                                    @forelse ($products as $product)
                                         @php
-                                            $category_name = $product['category_name'];
-                                            $product_link = 'product.html?id=' . $product['id'];
-                                            // Simulate image source
-                                            $image_src = asset('assets/images/placeholder.jpg');
-
-                                            // Determine labels (Static simulation)
+                                            // Labels
                                             $labels = '';
-                                            if ($product['isHot'] == '1') {
+                                            if ($product->isHot ?? false) {
                                                 $labels .=
                                                     '<span class="product-label label-circle label-top">Hot</span>';
                                             }
-
-                                            if (
-                                                isset($product['created_at']) &&
-                                                $product['created_at'] > \Carbon\Carbon::now()->subDays(7)
-                                            ) {
+                                            if ($product->created_at->gt(\Carbon\Carbon::now()->subDays(7))) {
                                                 $labels .=
                                                     '<span class="product-label label-circle label-new">New</span>';
                                             }
-                                            // Price for display
-                                            $formatted_price = format_price($product['price']);
+
+                                            // Image handling
+                                            $imagePath = !empty($product->attachments[0])
+                                                ? asset('storage/'.$product->attachments[0])
+                                                : asset('assets/images/placeholder.jpg');
+                                           
                                         @endphp
 
                                         <div class="product product-2">
                                             <figure class="product-media">
-                                                {!! $labels !!} {{-- Outputting HTML string for labels --}}
-                                                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQCvHwovbRHB9NnFG6PaeXbFZMAczyZ6m9EHQ&s"
-                                                    alt="{{ htmlspecialchars($product['product_name']) }}"
+                                                {!! $labels !!}
+                                                <img src="{{ $imagePath }}" alt="{{ $product->product_name }}"
                                                     class="product-image" style="height: 300px; object-fit: cover;">
 
                                                 <div class="product-action-vertical">
                                                     <a href="#" class="btn-product-icon btn-wishlist"
                                                         title="Add to wishlist"></a>
                                                 </div>
+
                                                 <div
                                                     class="product-action d-flex justify-content-around align-items-center">
-                                                    {{-- Static: Always show login modal link for simplicity in a static page --}}
                                                     <a href="#signin-modal"
                                                         class="btn-product-icon btn-cart trigger-login"
                                                         data-toggle="modal" title="Add to cart">
                                                         <i class="icon-shopping-bag"></i>
                                                     </a>
-                                                    <a href="popup/quickView.php?id={{ $product['id'] }}"
+                                                    <a href="{{ url('popup/quickView?id=' . $product->id) }}"
                                                         class="btn-product-icon btn-quickview mb-1"
                                                         title="Quick view">
                                                         <i class="icon-eye"></i>
                                                     </a>
                                                 </div>
                                             </figure>
+
                                             <div class="product-body">
                                                 <div class="product-cat">
-                                                    <a
-                                                        href="category.html?id={{ $product['category_id'] }}">{{ htmlspecialchars($category_name) }}</a>
+                                                    <a href="{{ url('category?id=' . $product->category_id) }}">
+                                                        {{ $product->category->category_name ?? 'Uncategorized' }}
+                                                    </a>
                                                 </div>
-                                                <h3 class="product-title"><a
-                                                        href="{{ $product_link }}">{{ htmlspecialchars($product['product_name']) }}</a>
+
+                                                <h3 class="product-title">
+                                                    <a href="{{ url('product?id=' . $product->id) }}">
+                                                        {{ $product->product_name }}
+                                                    </a>
                                                 </h3>
+
                                                 <div class="product-price">
-                                                    {{ $formatted_price }}
+                                                    {{ format_price($product->price) }}
                                                 </div>
+
                                                 <div class="ratings-container">
                                                     <div class="ratings">
-                                                        {{-- Dummy rating width --}}
                                                         <div class="ratings-val"
                                                             style="width: {{ get_rating_width() }}%;"></div>
-                                                    </div><span class="ratings-text">( {{ get_review_count() }}
-                                                        Reviews )</span>
+                                                    </div>
+                                                    <span class="ratings-text">
+                                                        ({{ get_review_count() }} Reviews)
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
-                                    @endforeach
+                                    @empty
+                                        <p class="text-center py-4 w-100">No products found in this category.</p>
+                                    @endforelse
 
                                 </div>
                             </div>

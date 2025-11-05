@@ -5,6 +5,8 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\UserDashboardController;
+use App\Models\Category;
+use App\Models\Product;
 use Illuminate\Support\Facades\Route;
 
 Route::get('admin/login', function () {
@@ -59,10 +61,27 @@ Route::get('admin/register', function () {
 //     return view('user.index');
 // })->name('login');
 Route::get('/', function () {
+
+    $categories = Category::all();
+
+        // Fetch all products with their categories
+        $products = Product::with('category')->latest()->get();
+
+        // Group products by category_id
+        $groupedProducts = $products->groupBy('category_id');
+
+        
     if (Auth::check() && Auth::user()->designation == 'admin') {
         return redirect()->route('admin.dashboard');
     } 
-        return view('user.index');
+   // Send to view
+        return view('user.index', [
+            'data' => [
+                'categories' => $categories,
+                'products' => $products,
+                'grouped_products' => $groupedProducts
+            ]
+        ]);
     
 })->name('user');
 // ====================================================================
