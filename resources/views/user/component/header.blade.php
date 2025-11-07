@@ -3,52 +3,30 @@
     // In a real Laravel application, this data would be passed from a controller.
 
     // 1. Static Categories (for the dropdown menu)
-    $all_categories = [
-        ['id' => 10, 'category_name' => 'Electronics'],
-        ['id' => 11, 'category_name' => 'Appliances'],
-        ['id' => 12, 'category_name' => 'Digital Cameras'],
-        ['id' => 13, 'category_name' => 'Cell Phones & Tablets'],
-        ['id' => 14, 'category_name' => 'Smart Home'],
-        ['id' => 15, 'category_name' => 'Audio & Video'],
-        ['id' => 16, 'category_name' => 'Gaming Consoles'],
-    ];
 
-    // 2. Static Cart Items (for the dropdown mini-cart)
-    // NOTE: In a static page, we simulate 2 items in the cart
-    $cart_items = [
-        [
-            'product_id' => 101,
-            'product_name' => 'High-Resolution Monitor',
-            'price' => 350.0,
-            'quantity' => 1,
-            'image' => 'products/product-1.jpg', // Dummy image path
-        ],
-        [
-            'product_id' => 205,
-            'product_name' => 'Wireless Mechanical Keyboard',
-            'price' => 120.0,
-            'quantity' => 2,
-            'image' => 'products/product-2.jpg',
-        ],
-    ];
+    if (Auth::check()) {
+        // Eager load the 'product' relationship to access details like name and price
+        $cartItems = App\Models\Cart::where('user_id', Auth::id())->with('product')->get();
 
-    // 3. Static Cart Totals and User Status
-    $cart_total = array_sum(
-        array_map(function ($item) {
-            return $item['price'] * $item['quantity'];
-        }, $cart_items),
-    );
-    $cart_count = array_sum(array_column($cart_items, 'quantity')); // Total quantity of items
+        $cartCount = $cartItems->sum('quantity');
 
-    // Simulation for user status
-    $user_is_logged_in = true; // Set to false to see the Sign in/Sign up link
-    $user_designation = 'user'; // 'user' or 'admin' or null
-    $user_name = 'John Doe';
+
+        // Calculate total price using the related Product model's price
+        $cartTotal = $cartItems->sum(function ($item) {
+            // Ensure the product exists and has a price attribute
+            return optional($item->product)->price * $item->quantity;
+        });
+    } else {
+        $cartItems = collect(); // Empty collection if not logged in
+        $cartCount = 0;
+        $cartTotal = 0;
+    }
+
 @endphp
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-
+{{-- {{ dd($cartItems) }} --}}
 
 <header class="header header-intro-clearance header-4 border-b border-gray-200">
     {{-- Top Header Section with Tailwind classes --}}
@@ -110,8 +88,7 @@
                                                 <form method="POST" action="{{ route('logout') }}">
                                                     @csrf
 
-                                                    <x-responsive-nav-link :href="route('logout')"
-                                                    @class('text-3xl')
+                                                    <x-responsive-nav-link :href="route('logout')" @class('text-3xl')
                                                         onclick="event.preventDefault();
                                         this.closest('form').submit();">
                                                         {{ __('Log Out') }}
@@ -180,7 +157,7 @@
                         <div class="icon">
                             <i class="icon-shopping-cart"></i>
                             {{-- Blade output for static count --}}
-                            <span class="cart-count">5</span>
+                            <span class="cart-count">{{ count($cartItems) }}</span>
                         </div>
                         <p>Cart</p>
                     </a>
@@ -188,31 +165,37 @@
                     <div class="dropdown-menu dropdown-menu-right">
                         <div class="dropdown-cart-products">
                             {{-- Blade @if/@foreach structure to loop over static cart items --}}
-                            @if (!empty($cart_items))
-                                @foreach ($cart_items as $item)
+                            @if (!empty($cartItems))
+                                @foreach ($cartItems as $item)
+                              
                                     <div class="product">
                                         <div class="product-cart-details">
                                             <h4 class="product-title">
                                                 <a href="product.php?id={{ $item['product_id'] }}">
-                                                    {{ htmlspecialchars($item['product_name']) }}
+                                                    {{ htmlspecialchars($item->product['product_name']) }}
                                                 </a>
                                             </h4>
                                             <span class="cart-product-info">
                                                 <span class="cart-product-qty">{{ $item['quantity'] }}</span>
-                                                x ${{ number_format($item['price'], 2) }}
+                                                x ${{ number_format($item->product['price'], 2) }}
                                             </span>
                                         </div>
                                         <figure class="product-image-container">
                                             <a href="product.php?id={{ $item['product_id'] }}" class="product-image">
-                                                <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQCvHwovbRHB9NnFG6PaeXbFZMAczyZ6m9EHQ&s"
-                                                    alt="product">
+                                                <img src="{{ asset('storage/' . $item->product['attachments'][0]) }}"
+                                                    alt="Product image for {{ $item->product['name'] ?? 'product' }}">
                                             </a>
                                         </figure>
-                                        {{-- Note: The `cart.php?remove=` link is kept static for navigation only --}}
-                                        <a href="cart.php?remove={{ $item['product_id'] }}" class="btn-remove"
-                                            title="Remove Product">
-                                            <i class="icon-close"></i>
-                                        </a>
+                            
+                                        <form action="{{ route('cart.destroy', $item['id']) }}" method="POST">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn-remove" title="Remove Product">
+                                                <i class="icon-close"></i>
+                                            </button>
+
+                                        </form>
+
                                     </div>
                                 @endforeach
                             @else
@@ -221,15 +204,15 @@
                         </div>
 
                         {{-- Cart total and action buttons (Uses Static Cart Data) --}}
-                        @if (!empty($cart_items))
+                        @if (!empty($cartItems))
                             <div class="dropdown-cart-total">
                                 <span>Total</span>
-                                <span class="cart-total-price">${{ number_format($cart_total, 2) }}</span>
+                                <span class="cart-total-price">${{ number_format($cartTotal, 2) }}</span>
                             </div>
 
                             <div class="dropdown-cart-action">
-                                <a href="cart.php" class="btn btn-primary">View Cart</a>
-                                <a href="checkout.php" class="btn btn-outline-primary-2">
+                                <a href="{{ route('cart.index') }}" class="btn btn-primary">View Cart</a>
+                                <a href="{{ route('checkout') }}" class="btn btn-outline-primary-2">
                                     <span>Checkout</span><i class="icon-long-arrow-right"></i>
                                 </a>
                             </div>

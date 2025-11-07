@@ -26,7 +26,9 @@ class Cart extends Model
         'product_id',
         'quantity',
     ];
-
+    protected $casts = [
+        'quantity' => 'integer',
+    ];
     /**
      * Indicates if the model should be timestamped.
      *
@@ -34,7 +36,7 @@ class Cart extends Model
      * default `updated_at` management.
      * * @var bool
      */
-    public $timestamps = false; 
+    public $timestamps = false;
 
     // --- Relationships ---
 

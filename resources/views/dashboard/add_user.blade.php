@@ -12,7 +12,7 @@
                     <!-- Page Heading -->
                     <div class="flex items-center justify-between mb-6">
                         <h1 class="text-2xl font-bold text-gray-900">Add New User</h1>
-                        <a href="{{ route('AdminDashboard') }}"
+                        <a href="{{ route('admin.dashboard') }}"
                             class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium text-sm transition-colors duration-200">
                             <i class="fa-solid fa-arrow-left"></i>
                             <span>Back to Dashboard</span>

@@ -76,7 +76,7 @@
         </div>
 
         <div class="flex justify-end space-x-4">
-            <a href="{{ route('dashboard') }}" 
+            <a href="{{ route('admin.dashboard') }}" 
                class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 transition duration-150">
                 Cancel
             </a>

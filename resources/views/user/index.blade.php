@@ -20,10 +20,10 @@
         'new-all-tab' => $data['products'],
     ];
 
-   foreach ($data['categories'] as $category) {
-    $key = 'new-' . strtolower(preg_replace('/[^a-z0-9]+/', '-', $category->category_name)) . '-tab';
-    $tabs[$key] = $data['grouped_products'][$category->id] ?? collect();
-}
+    foreach ($data['categories'] as $category) {
+        $key = 'new-' . strtolower(preg_replace('/[^a-z0-9]+/', '-', $category->category_name)) . '-tab';
+        $tabs[$key] = $data['grouped_products'][$category->id] ?? collect();
+    }
 
 @endphp
 <!DOCTYPE html>
@@ -51,7 +51,7 @@
     <div class="page-wrapper min-h-screen bg-gray-50">
         @include('user.component.header')
 
-      
+      @include('user.component.toast')
 
         <main class="main">
             {{-- Introductory Slider Section --}}
@@ -153,7 +153,10 @@
                                 </li>
                                 @foreach ($data['categories'] as $category)
                                     @php
-                                        $tabId = 'new-' . strtolower(preg_replace('/[^a-z0-9]+/', '-', $category->category_name)) . '-tab';
+                                        $tabId =
+                                            'new-' .
+                                            strtolower(preg_replace('/[^a-z0-9]+/', '-', $category->category_name)) .
+                                            '-tab';
 
                                     @endphp
 
@@ -204,9 +207,9 @@
 
                                             // Image handling
                                             $imagePath = !empty($product->attachments[0])
-                                                ? asset('storage/'.$product->attachments[0])
+                                                ? asset('storage/' . $product->attachments[0])
                                                 : asset('assets/images/placeholder.jpg');
-                                           
+
                                         @endphp
 
                                         <div class="product product-2">
@@ -219,20 +222,43 @@
                                                     <a href="#" class="btn-product-icon btn-wishlist"
                                                         title="Add to wishlist"></a>
                                                 </div>
+                                                @guest
+                                                    <div
+                                                        class="product-action d-flex justify-content-around align-items-center">
+                                                        <a href="#signin-modal"
+                                                            class="btn-product-icon btn-cart trigger-login"
+                                                            data-toggle="modal" title="Add to cart">
+                                                            <i class="icon-shopping-bag"></i>
+                                                        </a>
+                                                        <a href="{{ url('popup/quickView?id=' . $product->id) }}"
+                                                            class="btn-product-icon btn-quickview mb-1"
+                                                            title="Quick view">
+                                                            <i class="icon-eye"></i>
+                                                        </a>
+                                                    </div>
+                                                @endguest
 
-                                                <div
+                                                @auth
+                                                      <div
                                                     class="product-action d-flex justify-content-around align-items-center">
-                                                    <a href="#signin-modal"
-                                                        class="btn-product-icon btn-cart trigger-login"
-                                                        data-toggle="modal" title="Add to cart">
-                                                        <i class="icon-shopping-bag"></i>
-                                                    </a>
+                                                    <form action="{{ route('cart.add') }}" method="POST">
+                                                     @csrf
+                                                    <input type="text" hidden name="product_id" value="{{ $product->id }}">
+                                                    <input type="text" hidden name="quantity" value="1">
+                                                        <button type="submit"
+                                                        class="btn-product-icon btn-cart"
+                                                        title="Add to cart">
+                                                        {{-- <i class="icon-shopping-bag"></i> --}}
+                                                    </button>
+                                                    </form>
                                                     <a href="{{ url('popup/quickView?id=' . $product->id) }}"
                                                         class="btn-product-icon btn-quickview mb-1"
                                                         title="Quick view">
-                                                        <i class="icon-eye"></i>
+                                                        {{-- <i class="icon-eye"></i> --}}
                                                     </a>
                                                 </div>
+                                                @endauth
+
                                             </figure>
 
                                             <div class="product-body">
@@ -407,18 +433,19 @@
 
                                         @csrf
                                         <div>
-                                            <x-input-label for="email" :value="__('Email')" />
-                                            <x-text-input id="email" class="block mt-1 w-full" type="email"
-                                                name="email" :value="old('email')" required autofocus
+                                            <x-input-label for="email" :value="__('Email')" class="text-2xl" />
+                                            <x-text-input id="email" class="block mt-1 py-3 text-2xl w-full"
+                                                type="email" name="email" :value="old('email')" required autofocus
                                                 autocomplete="username" />
                                             <x-input-error :messages="$errors->get('email')" class="mt-2" />
                                         </div>
                                         <!-- Password -->
                                         <div class="mt-4">
-                                            <x-input-label for="password" :value="__('Password')" />
+                                            <x-input-label for="password" :value="__('Password')" class="text-2xl" />
 
-                                            <x-text-input id="password" class="block mt-1 w-full" type="password"
-                                                name="password" required autocomplete="current-password" />
+                                            <x-text-input id="password" class="block mt-1 py-3 text-2xl w-full"
+                                                type="password" name="password" required
+                                                autocomplete="current-password" />
 
                                             <x-input-error :messages="$errors->get('password')" class="mt-2" />
                                         </div>
@@ -466,38 +493,41 @@
                                         <h1 class="font-sans font-bold text-center text-3xl">Register</h1>
                                         <!-- Name -->
                                         <div>
-                                            <x-input-label for="name" :value="__('Name')" />
-                                            <x-text-input id="name" class="block mt-1 w-full" type="text"
-                                                name="name" :value="old('name')" required autofocus
+                                            <x-input-label for="name" :value="__('Name')" class="text-2xl" />
+                                            <x-text-input id="name" class="block mt-1 py-3 text-2xl w-full"
+                                                type="text" name="name" :value="old('name')" required autofocus
                                                 autocomplete="name" />
                                             <x-input-error :messages="$errors->get('name')" class="mt-2" />
                                         </div>
 
                                         <!-- Email Address -->
                                         <div class="mt-4">
-                                            <x-input-label for="email" :value="__('Email')" />
-                                            <x-text-input id="email" class="block mt-1 w-full" type="email"
-                                                name="email" :value="old('email')" required autocomplete="username" />
+                                            <x-input-label for="email" :value="__('Email')" class="text-2xl" />
+                                            <x-text-input id="email" class="block mt-1 py-3 text-2xl w-full"
+                                                type="email" name="email" :value="old('email')" required
+                                                autocomplete="username" />
                                             <x-input-error :messages="$errors->get('email')" class="mt-2" />
                                         </div>
 
                                         <!-- Password -->
                                         <div class="mt-4">
-                                            <x-input-label for="password" :value="__('Password')" />
+                                            <x-input-label for="password" :value="__('Password')" class="text-2xl" />
 
-                                            <x-text-input id="password" class="block mt-1 w-full" type="password"
-                                                name="password" required autocomplete="new-password" />
+                                            <x-text-input id="password" class="block mt-1 py-3 text-2xl w-full"
+                                                type="password" name="password" required
+                                                autocomplete="new-password" />
 
                                             <x-input-error :messages="$errors->get('password')" class="mt-2" />
                                         </div>
 
                                         <!-- Confirm Password -->
                                         <div class="mt-4">
-                                            <x-input-label for="password_confirmation" :value="__('Confirm Password')" />
+                                            <x-input-label for="password_confirmation" :value="__('Confirm Password')"
+                                                class="text-2xl" />
 
-                                            <x-text-input id="password_confirmation" class="block mt-1 w-full"
-                                                type="password" name="password_confirmation" required
-                                                autocomplete="new-password" />
+                                            <x-text-input id="password_confirmation"
+                                                class="block mt-1 py-3 text-2xl w-full" type="password"
+                                                name="password_confirmation" required autocomplete="new-password" />
 
                                             <x-input-error :messages="$errors->get('password_confirmation')" class="mt-2" />
                                         </div>

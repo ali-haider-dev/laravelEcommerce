@@ -1,10 +1,13 @@
 <?php
 
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
-use App\Http\Controllers\UserDashboardController;
+// use App\Http\Controllers\UserDashboardController;
+use App\Models\Cart;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Support\Facades\Route;
@@ -42,47 +45,29 @@ Route::get('admin/register', function () {
     return view('auth.register');
 })->name('admin.register');
 
-
-// Route::get('/login', function () {
-//     // If user already logged in
-
-//     $user = Auth::user();
-//     if (Auth::check()) {
-
-//         // Redirect based on designation
-//         if (strtolower($user->designation) === 'admin') {
-//             return redirect()->route('admin.dashboard');
-//         } else {
-//             return redirect()->route('user');
-//         }
-//     }
-
-//     // Otherwise show normal user login view
-//     return view('user.index');
-// })->name('login');
 Route::get('/', function () {
 
     $categories = Category::all();
 
-        // Fetch all products with their categories
-        $products = Product::with('category')->latest()->get();
+    // Fetch all products with their categories
+    $products = Product::with('category')->latest()->get();
 
-        // Group products by category_id
-        $groupedProducts = $products->groupBy('category_id');
+    // Group products by category_id
+    $groupedProducts = $products->groupBy('category_id');
 
-        
+
     if (Auth::check() && Auth::user()->designation == 'admin') {
         return redirect()->route('admin.dashboard');
-    } 
-   // Send to view
-        return view('user.index', [
-            'data' => [
-                'categories' => $categories,
-                'products' => $products,
-                'grouped_products' => $groupedProducts
-            ]
-        ]);
-    
+    }
+    // Send to view
+    return view('user.index', [
+        'data' => [
+            'categories' => $categories,
+            'products' => $products,
+            'grouped_products' => $groupedProducts
+        ]
+    ]);
+
 })->name('user');
 // ====================================================================
 // Group 1: Standard Authenticated Routes (Accessible to ALL logged-in users)
@@ -95,7 +80,39 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+//========= Cart Routes =========================
 
+Route::middleware(['auth'])->prefix('Cart')->group(function () {
+    Route::get('/', [CartController::class, 'index'])->name('cart.index');
+    Route::post('/', [CartController::class, 'store'])->name('cart.add');
+    Route::get('/{cart}', [CartController::class, ''])->name('cart.get');
+    Route::put('/{id}', [CartController::class, 'update'])->name('cart.update');
+    Route::delete('/{cart}', [CartController::class, 'destroy'])->name('cart.destroy');
+
+});
+
+//=============== Checkout Route ==================
+Route::middleware(['auth'])->prefix('Checkout')->group(function () {
+    Route::get('/', function () {
+        $userId = Auth::id();
+
+        $cartItems = Cart::where('user_id', $userId)
+            ->with('product') 
+            ->get();
+
+
+        $cartTotal = $cartItems->sum(function ($item) {
+
+            return $item->quantity * ($item->product->price ?? 0);
+        });
+        return view('user.checkout', [
+            'cartItems' => $cartItems,
+            'subtotal' => $cartTotal,
+        ]);
+    })->name('checkout');
+     
+    Route::post('/',[OrderController::class, 'store'])->name('checkout.store');
+});
 // ====================================================================
 // Group 2: Administrator Only Routes (Requires 'auth' AND 'admin' middleware)
 // ====================================================================

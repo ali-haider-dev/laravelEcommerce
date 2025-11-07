@@ -114,7 +114,7 @@ class AdminController extends Controller
             'file' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif', 'max:5120'],
         ];
         $validated = $request->validate($rules);
-        dd($request->all());
+  
         try {
 
             // Handle avatar upload
