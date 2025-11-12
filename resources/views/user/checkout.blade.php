@@ -66,7 +66,8 @@
                                         value="{{ old('company') }}" />
 
                                     <label>Country *</label>
-                                    <input type="text" class="form-control" name="country" value="Pakistan" required />
+                                    <input type="text" class="form-control" name="country" value="Pakistan"
+                                        required />
                                     <x-input-error :messages="$errors->get('country')" class="mt-2" />
 
                                     <label>Street address *</label>
@@ -77,7 +78,7 @@
                                     <input type="text" class="form-control" name="address2"
                                         placeholder="Appartments, suite, unit etc ..." value="{{ old('address2') }}" />
                                     <x-input-error :messages="$errors->get('address2')" class="mt-2" />
-                                    
+
                                     <div class="row">
                                         <div class="col-sm-6">
                                             <label>Town / City *</label>
@@ -113,30 +114,25 @@
                                         value="{{ Auth::user()->email }}" readonly />
                                     <x-input-error :messages="$errors->get('email')" class="mt-2" />
 
-                                    @php
-                                        $full_address_string = implode(', ', array_filter([
-                                            $user_data['address'] ?? '',
-                                            $user_data['city'] ?? '',
-                                            $user_data['postcode'] ?? '',
-                                            'Pakistan',
-                                        ]));
-                                    @endphp
-                                    
-                                    <input type="hidden" name="shipping_address_string" id="shipping_address_string"
-                                        value="{{ $full_address_string }}">
-                                    <input type="hidden" name="billing_address_string" id="billing_address_string"
-                                        value="{{ $full_address_string }}">
-                                    <input type="hidden" name="total_amount" value="{{ number_format($final_total, 2, '.', '') }}">
-                                    <input type="hidden" name="shipping_cost" value="{{ number_format($shipping_cost, 2, '.', '') }}">
-                                    <input type="hidden" name="paypal_order_id" id="paypal_order_id" value="">
-                                    
+
+                                    <input type="hidden" name="shipping_address" id="shipping_address_string"
+                                        value="">
+                                    <input type="hidden" name="billing_address" id="billing_address_string"
+                                        value="">
+                                    <input type="hidden" name="total_amount"
+                                        value="{{ number_format($final_total, 2, '.', '') }}">
+                                    <input type="hidden" name="shipping_cost"
+                                        value="{{ number_format($shipping_cost, 2, '.', '') }}">
+                                    <input type="hidden" name="paypal_order_id" id="paypal_order_id"
+                                        value="">
+
                                     <div class="custom-control custom-checkbox">
                                         <input type="checkbox" class="custom-control-input"
                                             id="checkout-diff-address" />
                                         <label class="custom-control-label" for="checkout-diff-address">Ship to a
                                             different address?</label>
                                     </div>
-                                    
+
                                     <label>Order notes (optional)</label>
                                     <textarea class="form-control" cols="30" rows="4" name="order_notes"
                                         placeholder="Notes about your order, e.g. special notes for delivery">{{ old('order_notes') }}</textarea>
@@ -238,82 +234,252 @@
     <script src="{{ asset('assets/js/owl.carousel.min.js') }}"></script>
     <script src="{{ asset('assets/js/main.js') }}"></script>
 
-    <script src="https://www.paypal.com/sdk/js?client-id=AXbmCprgHhbefFilx3Oy-8KocEGMBhNqOj01iirOVY1hdbpNG9ZcGmmi_Cw7AmeKHl7yA6veLp26SCSF&currency=USD"></script>
+    <script
+        src="https://www.paypal.com/sdk/js?client-id=AUOVyqA4VVr09Y0aGt6HFHb0VmLV-5sEcDqKOYI3VXN-U_B2zZ0AB2ZnGOJHfr3jTP_b5hNO1OAfxaJs&currency=USD">
+    </script>
 
+    {{-- AXbmCprgHhbefFilx3Oy-8KocEGMBhNqOj01iirOVY1hdbpNG9ZcGmmi_Cw7AmeKHl7yA6veLp26SCSF --}}
     <script>
         $(document).ready(function() {
-            const FINAL_TOTAL = parseFloat('{{ number_format($final_total, 2, '.', '') }}');
+            const FINAL_TOTAL = {{ number_format($final_total, 2, '.', '') }};
             const COD_BUTTON = $('#cod-submit-button');
             const PAYPAL_CONTAINER = $('#paypal-button-container');
+            const CHECKOUT_FORM = $('#checkout-form');
 
-            // Payment Method Toggle Logic
+            // Toast Helper - Pure UI feedback (minimal JS)
+            function showToast(message, type = 'info') {
+                const existingToast = document.getElementById('toast');
+                if (existingToast) existingToast.remove();
+
+                const styles = {
+                    success: {
+                        bg: 'bg-green-500/90',
+                        border: 'border-green-400',
+                        icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>'
+                    },
+                    error: {
+                        bg: 'bg-rose-500/90',
+                        border: 'border-rose-400',
+                        icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
+                    },
+                    info: {
+                        bg: 'bg-blue-500/90',
+                        border: 'border-blue-400',
+                        icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 20h.01"/></svg>'
+                    }
+                };
+                const style = styles[type] || styles.info;
+
+                document.body.insertAdjacentHTML('beforeend',
+                    `<div id="toast" class="fixed top-5 right-5 z-[9999] flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg border text-white backdrop-blur-lg animate-fadeIn ${style.bg} ${style.border}">
+                    ${style.icon}
+                    <span class="text-xl font-medium tracking-wide">${message}</span>
+                </div>`
+                );
+
+                const toast = document.getElementById('toast');
+                setTimeout(() => {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateX(5px)';
+                    setTimeout(() => toast.remove(), 500);
+                }, 3000);
+            }
+
+            // Address string builder - Only for UI convenience, validation happens server-side
+            function updateAddressStrings() {
+                const address = [
+                    $('input[name="address1"]').val(),
+                    $('input[name="address2"]').val(),
+                    $('input[name="city"]').val(),
+                    $('input[name="state"]').val(),
+                    $('input[name="postcode"]').val(),
+                    $('input[name="country"]').val()
+                ].filter(Boolean).join(', ');
+
+                $('#shipping_address_string').val(address);
+                $('#billing_address_string').val(address);
+            }
+
+            // Initialize - All fields enabled for server validation
+            $('.individual-address-field').prop('disabled', false);
+            $('.address-field').on('change keyup', updateAddressStrings);
+            updateAddressStrings();
+
+            // COD Form Submission - Direct server-side processing
+            CHECKOUT_FORM.on('submit', function(e) {
+                if ($('input[name="payment_method"]:checked').val() === 'cash_on_delivery') {
+                    updateAddressStrings();
+                    return true; // Server handles everything
+                }
+                e.preventDefault(); // Block form submit for PayPal
+                return false;
+            });
+
+            // Payment method toggle - Pure UI
             $('.payment-method-radio').on('change', function() {
-                if ($(this).val() === 'paypal') {
+                const method = $(this).val();
+                if (method === 'paypal') {
                     COD_BUTTON.hide();
                     PAYPAL_CONTAINER.show();
+                    CHECKOUT_FORM.prop('action', '#');
                 } else {
                     COD_BUTTON.show();
                     PAYPAL_CONTAINER.hide();
+                    CHECKOUT_FORM.prop('action', '{{ route('checkout.store') }}');
                 }
             });
-
-            // Initialize button visibility on load
             $('.payment-method-radio:checked').trigger('change');
 
-            // PayPal Button Setup
+            // PayPal Integration - Minimal client logic, maximum server validation
             paypal.Buttons({
+                // Step 1: Create PayPal order (client-side only for PayPal SDK)
                 createOrder: function(data, actions) {
-                    // Client-side validation
-                    const form = document.getElementById('checkout-form');
-                    if (!form.checkValidity()) {
-                        alert('Please fill out all required billing and shipping fields.');
-                        form.reportValidity();
-                        return Promise.reject('Form validation failed');
+                    // Basic HTML5 validation before opening PayPal popup
+                    if (!CHECKOUT_FORM[0].checkValidity()) {
+                        showToast('Please fill out all required fields.', 'error');
+                        CHECKOUT_FORM[0].reportValidity();
+                        return Promise.reject(new Error('Form validation failed'));
                     }
 
+                    updateAddressStrings();
+
+                    // Create PayPal order (required by PayPal SDK)
                     return actions.order.create({
                         purchase_units: [{
                             amount: {
-                                value: FINAL_TOTAL.toFixed(2)
+                                value: FINAL_TOTAL.toFixed(2),
+                                currency_code: 'USD'
                             },
-                            description: 'Kharido.pk Order'
+                            description: 'Molla Ecommerce Order'
                         }]
                     });
                 },
+
+                // Step 2: Payment approved - Capture and send to server
                 onApprove: function(data, actions) {
+                    console.log('✅ PayPal payment approved. Order ID:', data.orderID);
+
+                    // Capture payment (required by PayPal SDK)
                     return actions.order.capture().then(function(details) {
-                        // Store PayPal order ID in hidden field
-                        $('#paypal_order_id').val(data.orderID);
-                        
-                        // Build current address string from form
-                        const address1 = $('input[name="address1"]').val() || '';
-                        const address2 = $('input[name="address2"]').val() || '';
-                        const city = $('input[name="city"]').val() || '';
-                        const state = $('input[name="state"]').val() || '';
-                        const postcode = $('input[name="postcode"]').val() || '';
-                        const country = $('input[name="country"]').val() || '';
-                        
-                        const currentAddress = [address1, address2, city, state, postcode, country]
-                            .filter(val => val.trim() !== '')
-                            .join(', ');
-                        
-                        // Update hidden address fields with current form values
-                        $('#shipping_address_string').val(currentAddress);
-                        $('#billing_address_string').val(currentAddress);
-                        
-                        // Submit the form normally
-                        $('#checkout-form').submit();
+                        console.log('✅ Payment captured:', details.status);
+                        showToast('Payment successful! Creating your order...', 'success');
+
+                        // Send everything to server for validation and order creation
+                        processServerPayment(data.orderID, details);
                     });
                 },
+
+                // Step 3: Payment cancelled
                 onCancel: function(data) {
-                    console.log('PayPal payment was cancelled.', data);
-                    alert('PayPal payment was cancelled.');
+                    console.log('❌ PayPal payment cancelled by user');
+                    showToast('Payment was cancelled.', 'info');
                 },
+
+                // Step 4: PayPal SDK error
                 onError: function(err) {
-                    console.error("PayPal Error:", err);
-                    alert('An error occurred during the PayPal transaction. Please try again.');
+                    console.error('❌ PayPal SDK Error:', err);
+                    showToast('PayPal error occurred. Please try again.', 'error');
                 }
             }).render('#paypal-button-container');
+
+            /**
+             * SERVER-SIDE PROCESSING
+             * This function only sends data to server - all validation,
+             * order creation, and business logic happens on the server
+             */
+            function processServerPayment(paypalOrderID, details) {
+                console.log('📤 Sending order to server for processing...');
+
+                updateAddressStrings(); // Final sync
+
+                // Collect all form data
+                const formData = CHECKOUT_FORM.serializeArray();
+                formData.push({
+                    name: 'paypal_order_id',
+                    value: paypalOrderID
+                }, {
+                    name: 'payment_method',
+                    value: 'paypal'
+                });
+
+                // Disable button to prevent double submission
+                PAYPAL_CONTAINER.find('button').prop('disabled', true);
+                showToast('Processing your order...', 'info');
+
+                // Send to server - Server does ALL the heavy lifting
+                $.ajax({
+                    url: '{{ route('checkout.paypal.store') }}',
+                    method: 'POST',
+                    data: $.param(formData),
+                    dataType: 'json',
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    timeout: 30000, // 30 second timeout
+
+                    // Success: Server validated everything and created order
+                    success: function(response) {
+                        console.log('✅ Server response:', response);
+
+                        if (response.success === true && response.redirect_url) {
+                            showToast('Order placed successfully! Redirecting...', 'success');
+
+                            // Small delay for user to see success message
+                            setTimeout(function() {
+                                window.location.href = response.redirect_url;
+                            }, 1000);
+                        } else {
+                            // Unexpected response format
+                            console.error('❌ Unexpected server response:', response);
+                            showToast('Order processing error. Please contact support.', 'error');
+                            PAYPAL_CONTAINER.find('button').prop('disabled', false);
+                        }
+                    },
+
+                    // Error: Server validation failed or system error
+                    error: function(xhr, status, error) {
+                        console.error('❌ Server Error:', {
+                            status: xhr.status,
+                            statusText: status,
+                            error: error,
+                            response: xhr.responseText
+                        });
+
+                        PAYPAL_CONTAINER.find('button').prop('disabled', false);
+
+                        let message = 'Order processing failed. Please try again.';
+
+                        // Parse server error message
+                        try {
+                            const errorResponse = JSON.parse(xhr.responseText);
+
+                            if (xhr.status === 422 && errorResponse.messages) {
+                                // Validation errors from server
+                                const errors = Object.values(errorResponse.messages).flat();
+                                message = 'Validation error: ' + errors.join('; ');
+                            } else if (errorResponse.error) {
+                                message = errorResponse.error;
+                            }
+
+                            // Log detailed error for debugging
+                            if (errorResponse.details) {
+                                console.error('Server error details:', errorResponse.details);
+                            }
+                        } catch (e) {
+                            console.error('Failed to parse error response:', e);
+                        }
+
+                        // Network/timeout errors
+                        if (xhr.status === 0) {
+                            message = 'Network error. Please check your connection.';
+                        } else if (status === 'timeout') {
+                            message = 'Request timeout. Please try again.';
+                        }
+
+                        showToast(message, 'error');
+                    }
+                });
+            }
         });
     </script>
 </body>

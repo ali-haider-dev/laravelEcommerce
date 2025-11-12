@@ -90,9 +90,18 @@ Route::middleware(['auth'])->prefix('Checkout')->group(function () {
     })->name('checkout');
      
     Route::post('/',[OrderController::class, 'store'])->name('checkout.store');
-    Route::post('/initiate-paypal', [OrderController::class, 'initiatePayPal'])->name('checkout.initiate-paypal');
-    Route::get('/approve-paypal', [OrderController::class, 'approvePayPal'])->name('checkout.approve-paypal');
-    Route::get('/cancel-paypal', [OrderController::class, 'cancelPayPal'])->name('checkout.cancel-paypal');
+    Route::post('/paypal/store',[OrderController::class, 'storePayPal'])->name('checkout.paypal.store');
+});
+// ---------------- >> Order Routes << ----------------
+Route::middleware(['auth'])->prefix('Orders')->group(function () {
+    // Route to view the user's order history
+    Route::get('/', [OrderController::class, 'index'])->name('orders.index');
+
+    // Alias for order history (kept for compatibility)
+    Route::get('/orderConfirmation', [OrderController::class, 'index'])->name('orders.orderConfirmation');
+
+    // 4. Dedicated confirmation route (Used for redirecting after successful order creation/payment)
+    Route::get('/confirmation', [OrderController::class, 'showConfirmation'])->name('orders.confirmation');
 });
 // ====================================================================
 // Group 2: Administrator Only Routes (Requires 'auth' AND 'admin' middleware)

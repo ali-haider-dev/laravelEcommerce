@@ -21,7 +21,7 @@
                             <div>
                                 <p class="text-gray-400">Got Question? Call us 24/7</p>
                                 <a href="tel:#"
-                                    class="text-lg font-bold text-white hover:text-blue-500 text-xl transition duration-300">+0123
+                                    class="text-lg font-bold text-white hover:text-blue-500 transition duration-300">+0123
                                     456 789</a>
                             </div>
                         </div>
