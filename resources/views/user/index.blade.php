@@ -1,5 +1,4 @@
 @php
-    // --- Helper functions for UI ---
     function format_price($price)
     {
         return '$' . number_format($price, 2);
@@ -17,12 +16,13 @@
 
     // --- Generate tab structure dynamically ---
     $tabs = [
-        'new-all-tab' => $data['products'],
+        'new-all-tab' => ($allProducts = $data['categories']->flatMap(function ($category) {
+            return $category->products;
+        })),
     ];
-
     foreach ($data['categories'] as $category) {
         $key = 'new-' . strtolower(preg_replace('/[^a-z0-9]+/', '-', $category->category_name)) . '-tab';
-        $tabs[$key] = $data['grouped_products'][$category->id] ?? collect();
+        $tabs[$key] = $category->products; // directly use the products relation
     }
 
 @endphp
@@ -51,7 +51,7 @@
     <div class="page-wrapper min-h-screen bg-gray-50">
         @include('user.component.header')
 
-      @include('user.component.toast')
+        @include('user.component.toast')
 
         <main class="main">
             {{-- Introductory Slider Section --}}
@@ -239,24 +239,24 @@
                                                 @endguest
 
                                                 @auth
-                                                      <div
-                                                    class="product-action d-flex justify-content-around align-items-center">
-                                                    <form action="{{ route('cart.add') }}" method="POST">
-                                                     @csrf
-                                                    <input type="text" hidden name="product_id" value="{{ $product->id }}">
-                                                    <input type="text" hidden name="quantity" value="1">
-                                                        <button type="submit"
-                                                        class="btn-product-icon btn-cart"
-                                                        title="Add to cart">
-                                                        {{-- <i class="icon-shopping-bag"></i> --}}
-                                                    </button>
-                                                    </form>
-                                                    <a href="{{ url('popup/quickView?id=' . $product->id) }}"
-                                                        class="btn-product-icon btn-quickview mb-1"
-                                                        title="Quick view">
-                                                        {{-- <i class="icon-eye"></i> --}}
-                                                    </a>
-                                                </div>
+                                                    <div
+                                                        class="product-action d-flex justify-content-around align-items-center">
+                                                        <form action="{{ route('cart.add') }}" method="POST">
+                                                            @csrf
+                                                            <input type="text" hidden name="product_id"
+                                                                value="{{ $product->id }}">
+                                                            <input type="text" hidden name="quantity" value="1">
+                                                            <button type="submit" class="btn-product-icon btn-cart"
+                                                                title="Add to cart">
+                                                                {{-- <i class="icon-shopping-bag"></i> --}}
+                                                            </button>
+                                                        </form>
+                                                        <a href="{{ url('popup/quickView?id=' . $product->id) }}"
+                                                            class="btn-product-icon btn-quickview mb-1"
+                                                            title="Quick view">
+                                                            {{-- <i class="icon-eye"></i> --}}
+                                                        </a>
+                                                    </div>
                                                 @endauth
 
                                             </figure>
@@ -301,95 +301,6 @@
                 </div>
                 <div class="mb-6"></div>
 
-                {{-- CTA Banner Section --}}
-                <div class="container">
-                    <div class="cta cta-border mb-5 bg-cover bg-center"
-                        style="background-image: url(assets/images/demos/demo-4/bg-1.jpg);">
-                        <img src="assets/images/demos/demo-4/camera.png" alt="camera" class="cta-img">
-                        <div class="row justify-content-center">
-                            <div class="col-md-12">
-                                <div class="cta-content">
-                                    <div class="cta-text text-right text-white">
-                                        <p>Shop Today’s Deals <br><strong>Awesome Made Easy. HERO7 Black</strong></p>
-                                    </div>
-                                    {{-- Added Tailwind classes to the button for visual interest --}}
-                                    <a href="#"
-                                        class="btn btn-primary btn-round bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-full transition duration-300">
-                                        <span>Shop Now - $429.99</span>
-                                        <i class="icon-long-arrow-right"></i>
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- The entire "Trending Products Section" PHP logic and corresponding HTML is commented out in the original PHP.
-                     I am keeping it as HTML comments here to respect the original code's structure. --}}
-
-                <div class="mb-5"></div>
-
-                <div class="mb-4"></div>
-
-                <div class="container">
-                    <hr class="mb-0">
-                </div>
-
-                {{-- Icon Boxes Container with Tailwind classes for layout --}}
-                <div class="icon-boxes-container bg-transparent py-8">
-                    <div class="container">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <div class="col-sm-6 col-lg-3">
-                                <div
-                                    class="icon-box icon-box-side flex items-center p-4 bg-white shadow-sm rounded-lg">
-                                    <span class="icon-box-icon text-dark text-3xl mr-4">
-                                        <i class="icon-rocket"></i>
-                                    </span>
-                                    <div class="icon-box-content">
-                                        <h3 class="icon-box-title text-lg font-semibold">Free Shipping</h3>
-                                        <p class="text-gray-600">Orders $50 or more</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-sm-6 col-lg-3">
-                                <div
-                                    class="icon-box icon-box-side flex items-center p-4 bg-white shadow-sm rounded-lg">
-                                    <span class="icon-box-icon text-dark text-3xl mr-4">
-                                        <i class="icon-rotate-left"></i>
-                                    </span>
-                                    <div class="icon-box-content">
-                                        <h3 class="icon-box-title text-lg font-semibold">Free Returns</h3>
-                                        <p class="text-gray-600">Within 30 days</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-sm-6 col-lg-3">
-                                <div
-                                    class="icon-box icon-box-side flex items-center p-4 bg-white shadow-sm rounded-lg">
-                                    <span class="icon-box-icon text-dark text-3xl mr-4">
-                                        <i class="icon-info-circle"></i>
-                                    </span>
-                                    <div class="icon-box-content">
-                                        <h3 class="icon-box-title text-lg font-semibold">Get 20% Off 1 Item</h3>
-                                        <p class="text-gray-600">when you sign up</p>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-sm-6 col-lg-3">
-                                <div
-                                    class="icon-box icon-box-side flex items-center p-4 bg-white shadow-sm rounded-lg">
-                                    <span class="icon-box-icon text-dark text-3xl mr-4">
-                                        <i class="icon-life-ring"></i>
-                                    </span>
-                                    <div class="icon-box-content">
-                                        <h3 class="icon-box-title text-lg font-semibold">We Support</h3>
-                                        <p class="text-gray-600">24/7 amazing services</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
         </main>
 
         {{-- Laravel Blade component/include for Footer --}}

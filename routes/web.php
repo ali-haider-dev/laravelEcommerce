@@ -7,6 +7,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReportController;
 // use App\Http\Controllers\UserDashboardController;
+use App\Http\Controllers\UserDashboardController;
 use App\Models\Cart;
 use App\Models\Category;
 use App\Models\Product;
@@ -45,30 +46,7 @@ Route::get('admin/register', function () {
     return view('auth.register');
 })->name('admin.register');
 
-Route::get('/', function () {
-
-    $categories = Category::all();
-
-    // Fetch all products with their categories
-    $products = Product::with('category')->latest()->get();
-
-    // Group products by category_id
-    $groupedProducts = $products->groupBy('category_id');
-
-
-    if (Auth::check() && Auth::user()->designation == 'admin') {
-        return redirect()->route('admin.dashboard');
-    }
-    // Send to view
-    return view('user.index', [
-        'data' => [
-            'categories' => $categories,
-            'products' => $products,
-            'grouped_products' => $groupedProducts
-        ]
-    ]);
-
-})->name('user');
+Route::get('/', [UserDashboardController::class, 'index'])->name('user');
 // ====================================================================
 // Group 1: Standard Authenticated Routes (Accessible to ALL logged-in users)
 // ====================================================================
@@ -112,6 +90,9 @@ Route::middleware(['auth'])->prefix('Checkout')->group(function () {
     })->name('checkout');
      
     Route::post('/',[OrderController::class, 'store'])->name('checkout.store');
+    Route::post('/initiate-paypal', [OrderController::class, 'initiatePayPal'])->name('checkout.initiate-paypal');
+    Route::get('/approve-paypal', [OrderController::class, 'approvePayPal'])->name('checkout.approve-paypal');
+    Route::get('/cancel-paypal', [OrderController::class, 'cancelPayPal'])->name('checkout.cancel-paypal');
 });
 // ====================================================================
 // Group 2: Administrator Only Routes (Requires 'auth' AND 'admin' middleware)

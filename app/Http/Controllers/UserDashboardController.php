@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
+use App\Models\Product;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -12,9 +14,42 @@ class UserDashboardController extends Controller
      */
     public function index()
     {
-         $user = Auth::user();
-        
-        return view('user.index');
+        // $categories = Category::all();
+
+        // // Fetch all products with their categories
+        // $products = Product::with('category')->latest()->get();
+
+        // // Group products by category_id
+        // $groupedProducts = $products->groupBy('category_id');
+
+
+        // if (Auth::check() && Auth::user()->designation == 'admin') {
+        //     return redirect()->route('admin.dashboard');
+        // }
+        // // Send to view
+        // return view('user.index', [
+        //     'data' => [
+        //         'categories' => $categories,
+        //         'products' => $products,
+        //         'grouped_products' => $groupedProducts
+        //     ]
+        // ]);
+
+        // Check admin first
+        if (Auth::check() && Auth::user()->designation === 'admin') {
+            return redirect()->route('admin.dashboard');
+        }
+
+        // Fetch categories with products
+        $data['categories'] = Category::with([
+            'products' => function ($query) {
+                $query->latest(); // Latest products first
+            }
+        ])->get();
+
+        // Send to view
+        return view('user.index', compact('data'));
+
     }
 
     /**

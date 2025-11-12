@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\OrderConfirmationMail;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\OrderItem;
@@ -14,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class OrderController extends Controller
 {
@@ -59,9 +61,7 @@ class OrderController extends Controller
      */
     public function store(Request $request): RedirectResponse|JsonResponse|View
     {
-
         $userId = Auth::id();
-
 
         $data = $request->validate([
             'firstname' => 'required|string|max:100',
@@ -75,105 +75,154 @@ class OrderController extends Controller
             'state' => 'required|string|max:100',
             'postcode' => 'required|string|max:20',
             'phone_number' => 'required|string|max:20',
-
-
             'shipping_address_string' => 'required|string|max:1000',
             'billing_address_string' => 'required|string|max:1000',
-
             'order_notes' => 'nullable|string|max:1000',
             'payment_method' => 'required|in:cod,paypal',
-
-
-            'paypal_order_id' => 'required_if:payment_method,paypal|string|max:50',
+            'total_amount' => 'required|numeric|min:0',
+            'shipping_cost' => 'required|numeric|min:0',
+            'paypal_order_id' => 'required_if:payment_method,paypal|nullable|string|max:50',
         ]);
-         $full_address_string = $request->address1 . $request->address2 .$request->city . $request->state;
+
+        // Build full address from individual fields for database storage
+        $full_address_parts = array_filter([
+            $request->address1,
+            $request->address2,
+            $request->city,
+            $request->state,
+            $request->postcode,
+            $request->country
+        ]);
+        $full_address_string = implode(', ', $full_address_parts);
 
         $cartItems = Cart::where('user_id', $userId)
-            ->with('product') // Eager load product to get price
+            ->with('product')
             ->get();
 
         if ($cartItems->isEmpty()) {
-            return redirect()->route('cart.index')->with('error', 'Your cart is empty. Please add items before checking out.');
+            return redirect()->route('cart.index')
+                ->with('error', 'Your cart is empty. Please add items before checking out.');
         }
 
         // Use a database transaction for reliability
         DB::beginTransaction();
 
         try {
-            $totalAmount = 0;
+            $calculatedTotal = 0;
             $orderNumber = 'ORD-' . time() . '-' . $userId;
 
-            //  Create the main Order record
+            // Determine payment status based on payment method
+            $paymentStatus = ($request->payment_method === 'paypal') ? 'paid' : 'pending';
+
+            // Create the main Order record
             $order = Order::create([
                 'order_number' => $orderNumber,
                 'user_id' => $userId,
-                'total_amount' => 0,
-                'payment_status' => 'pending',
+                'total_amount' => 0, // Will be updated after items are calculated
+                'payment_status' => $paymentStatus,
                 'order_status' => 'pending',
-                'shipping_address' => $request->full_address_string,
-                'billing_address' => $request->full_address_string,
-                'payment_method' => $request->payment_method,
+                'shipping_address' => $full_address_string,
+                'billing_address' => $full_address_string,
+                'payment_method' => $request->payment_method, // Dynamic: 'cod' or 'paypal'
+                'order_notes' => $request->order_notes,
+                'paypal_order_id' => $request->paypal_order_id, // Only populated for PayPal orders
                 'created_by' => $userId,
             ]);
 
             $orderItemsData = [];
 
-
             foreach ($cartItems as $cartItem) {
                 $product = $cartItem->product;
+
+                // Check if product exists
+                if (!$product) {
+                    DB::rollBack();
+                    return redirect()->route('cart.index')
+                        ->with('error', 'One or more products in your cart no longer exist.');
+                }
+
                 $price = $product->price;
                 $subtotal = $price * $cartItem->quantity;
-                $totalAmount += $subtotal;
+                $calculatedTotal += $subtotal;
 
                 // Prepare data for the OrderItem
                 $orderItemsData[] = new OrderItem([
                     'product_id' => $cartItem->product_id,
                     'quantity' => $cartItem->quantity,
-                    'unit_price' => $price, // Price at the time of purchase
+                    'unit_price' => $price,
                     'subtotal' => $subtotal,
                 ]);
 
-                // Optional: Decrement product stock (assuming a 'stock' column exists)
-                // if ($product->stock >= $cartItem->quantity) {
-                //     $product->stock -= $cartItem->quantity;
-                //     $product->save();
-                // } else {
-                //     // Handle out of stock error (optional: rollback and inform user)
-                //     DB::rollBack();
-                //     return redirect()->route('cart.index')->with('error', 'One or more items in your cart went out of stock.');
+                // Optional: Decrement product stock
+                // if (isset($product->stock)) {
+                //     if ($product->stock >= $cartItem->quantity) {
+                //         $product->decrement('stock', $cartItem->quantity);
+                //     } else {
+                //         DB::rollBack();
+                //         return redirect()->route('cart.index')
+                //             ->with('error', "Product '{$product->product_name}' has insufficient stock.");
+                //     }
                 // }
             }
 
-            //Save all Order Items at once
+            // Save all Order Items at once
             $order->items()->saveMany($orderItemsData);
 
-            //  Update the Order with the final total amount
-            $order->total_amount = $request->total_amount;
+            // Add shipping cost to calculated total
+            $finalTotal = $calculatedTotal + floatval($request->shipping_cost);
+
+            // Verify the total matches what was submitted (prevent tampering)
+            $submittedTotal = floatval($request->total_amount);
+            if (abs($finalTotal - $submittedTotal) > 0.01) { // Allow for small rounding differences
+                DB::rollBack();
+                Log::warning('Order total mismatch', [
+                    'user_id' => $userId,
+                    'calculated' => $finalTotal,
+                    'submitted' => $submittedTotal
+                ]);
+                return redirect()->route('cart.index')
+                    ->with('error', 'Order total verification failed. Please try again.');
+            }
+
+            // Update the Order with the final total amount
+            $order->total_amount = $finalTotal;
             $order->save();
 
-            //  Clear the user's cart
+            // Clear the user's cart
             Cart::where('user_id', $userId)->delete();
 
-            // commit the transaction
+            // Commit the transaction
             DB::commit();
 
-            // redirect to confirmation view
+            // Send order confirmation email
+            try {
+                $user = Auth::user();
+                Mail::to($user->email)->send(new OrderConfirmationMail($order));
+            } catch (\Exception $mailException) {
+                // Log email error but don't fail the order
+                Log::error('Order confirmation email failed: ' . $mailException->getMessage(), [
+                    'order_id' => $order->id,
+                    'user_id' => $userId
+                ]);
+            }
+
+            // Redirect to confirmation view
             return view('user.order_confirm', [
                 'order_number' => $orderNumber,
-                "success" => 'Your order has been placed successfully! Order #' . $orderNumber
+                'order' => $order,
+                'success' => 'Your order has been placed successfully! Order #' . $orderNumber
             ]);
-
 
         } catch (\Exception $e) {
-
             DB::rollBack();
-            Log::error('Order Placement Error: ' . $e->getMessage(), ['user_id' => $userId]);
-            return response()->json([
-                'error' => $e->getMessage()
+            Log::error('Order Placement Error: ' . $e->getMessage(), [
+                'user_id' => $userId,
+                'trace' => $e->getTraceAsString()
             ]);
-            // Pass the exception message back to the user for debugging purposes
+             return response()->json(['error' => 'An unexpected error occurred while placing your order. Please try again.'.$e->getMessage(),
+            "fullerror"=>$e], 500);
             // return redirect()->route('cart.index')
-            //                  ->with('error', 'An unexpected error occurred while placing your order. Please try again. Error: ' . $e->getMessage());
+            //     ->with('error', 'An unexpected error occurred while placing your order. Please try again.');
         }
     }
 }

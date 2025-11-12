@@ -49,10 +49,17 @@ class Category extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
-
+    /**
+     * Get the products for the category.
+     */
+    public function products()
+    {
+        return $this->hasMany(Product::class);
+    }
     /**
      * Get the user who last updated the category.
      */
+
     public function editor()
     {
         return $this->belongsTo(User::class, 'updated_by');

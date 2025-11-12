@@ -1,37 +1,6 @@
 @vite(['resources/css/app.css', 'resources/js/app.js'])
 
 <footer class="footer bg-white border-t border-gray-200">
-    {{-- CTA Section: Newsletter Signup --}}
-    <div class="cta bg-cover bg-center py-12 mb-0"
-        style="background-image: url(assets/images/demos/demo-4/bg-5.jpg);">
-        <div class="container mx-auto px-4">
-            <div class="flex justify-center">
-                <div class="w-full sm:w-10/12 md:w-8/12 lg:w-6/12">
-                    <div class="text-center mb-6">
-                        <h3 class="text-6xl font-bold text-white mb-2">Get The Latest Deals</h3>
-                        <p class="text-white text-xl">and receive <span class="font-bold text-yellow-400">$20
-                                coupon</span> for first shopping</p>
-                    </div>
-
-                    <form action="#">
-                        <div class="flex items-stretch rounded-full overflow-hidden shadow-lg">
-                            <input type="email"
-                                class="flex-grow p-4 text-gray-800 bg-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder:text-xl"
-                                placeholder="Enter your Email Address" aria-label="Email Address" required>
-                            <div class="flex-shrink-0">
-                                <button
-                                    class="bg-blue-600 text-white font-semibold px-6 py-4 hover:bg-blue-700 transition duration-300 flex items-center space-x-1"
-                                    type="submit">
-                                    <span>Subscribe</span>
-                                    <i class="icon-long-arrow-right text-xl ml-3"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
 
     {{-- Footer Middle: Links and Contact Info --}}
     <div class="footer-middle py-10 border-b border-gray-700 bg-gray-900 text-gray-300">

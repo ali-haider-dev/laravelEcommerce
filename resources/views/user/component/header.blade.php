@@ -112,7 +112,7 @@
         <div class="container mx-auto px-4 flex justify-between items-center gap-20">
             <div class="header-left flex items-center">
 
-                <a href="index.php" class="logo">
+                <a href="{{ url('/') }}" class="logo">
                     <img src={{ asset('assets/images/demos/demo-4/logo.png') }} alt="Molla Logo" width="105"
                         height="25">
                 </a>
@@ -191,6 +191,7 @@
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn-remove" title="Remove Product">
+                                                <input type="text" hidden name="delete">
                                                 <i class="icon-close"></i>
                                             </button>
 

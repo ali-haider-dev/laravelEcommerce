@@ -153,9 +153,15 @@
 
                                                 <td class="total-col">Rs. {{ number_format($subtotal) }}</td>
                                                 <td class="remove-col">
-                                                    {{-- Note: Replace '#' with your actual remove route --}}
-                                                    <a href="#" class="btn-remove"><i
-                                                            class="icon-close"></i></a>
+                                                    <form action="{{ route('cart.destroy', $item->id) }}"
+                                                        method="POST">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <input type="text" hidden name="delete">
+                                                        <button class="btn-remove"><i class="icon-close"></i></button>
+
+                                                    </form>
+
                                                 </td>
                                             </tr>
                                         @empty
@@ -269,7 +275,8 @@
                                         </tbody>
                                     </table>
 
-                                    <a href="{{ route('checkout') }}" class="btn btn-outline-primary-2 btn-order btn-block">PROCEED TO
+                                    <a href="{{ route('checkout') }}"
+                                        class="btn btn-outline-primary-2 btn-order btn-block">PROCEED TO
                                         CHECKOUT</a>
                                 </div>
                                 <a href="{{ url('/') }}"

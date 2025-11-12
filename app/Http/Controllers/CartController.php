@@ -34,7 +34,6 @@ class CartController extends Controller
 
 
         $cartTotal = $cartItems->sum(function ($item) {
-
             return $item->quantity * ($item->product->price ?? 0);
         });
         return view('user.cart', [
@@ -67,7 +66,7 @@ class CartController extends Controller
         }
 
         $userId = Auth::id();
-        $productId = $request->input('product_id');
+        $productId = $request->product_id;
         $requestedQuantity = $request->input('quantity');
 
         // Check if the product already exists in the cart for the user
@@ -128,7 +127,7 @@ class CartController extends Controller
         }
 
         $userId = Auth::id();
-      
+
         // Find the cart item, ensuring it belongs to the authenticated user
         $cartItem = Cart::where('id', $id)
             ->where('user_id', $userId)
@@ -151,7 +150,7 @@ class CartController extends Controller
         ]);
     }
 
-    public function destroy($id): RedirectResponse|JsonResponse
+    public function destroy(Request $request, $id): RedirectResponse|JsonResponse
     {
         if (!Auth::check()) {
             // If unauthenticated, always return JSON error (standard API practice)
@@ -173,15 +172,16 @@ class CartController extends Controller
         $message = '';
 
         // 2. Implement the quantity logic
-        if ($cartItem->quantity > 1) {
+        if ($cartItem->quantity <= 1 && $request->has('delete')) {
+            // Quantity is 1 or less, delete the entire cart item
+            $cartItem->delete();
+            $message = "Product successfully removed from cart.";
+        } else {
+
             // Quantity is greater than 1, decrement it
             $cartItem->quantity -= 1;
             $cartItem->save();
             $message = "One unit of the product removed from the cart.";
-        } else {
-            // Quantity is 1 or less, delete the entire cart item
-            $cartItem->delete();
-            $message = "Product successfully removed from cart.";
         }
 
         // 3. Redirect back with the appropriate success message

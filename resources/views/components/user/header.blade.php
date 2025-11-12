@@ -67,7 +67,7 @@
                 <button class="lg:hidden p-2 text-gray-600 hover:text-gray-900">
                     <i class="fas fa-bars"></i>
                 </button>
-                <a href="{{ url('/') }}" class="ml-4 lg:ml-0">
+                <a href="index.php" class="ml-4 lg:ml-0">
                     <img src="{{ asset('assets/images/demos/demo-4/logo.png') }}" alt="Molla Logo" class="w-28 h-auto">
                 </a>
             </div>
