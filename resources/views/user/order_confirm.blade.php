@@ -102,7 +102,7 @@
                         @else
                             {{-- Fallback message --}}
                             <p class="lead text-xl text-emerald-600 mb-8 font-medium">
-                                Your payment was successful. Thank you for your purchase!
+                                Your Order is successful. Thank you for your purchase!
                             </p>
                         @endif
                     </div>

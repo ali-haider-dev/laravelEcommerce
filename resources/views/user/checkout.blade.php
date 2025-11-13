@@ -307,7 +307,7 @@
 
             // COD Form Submission - Direct server-side processing
             CHECKOUT_FORM.on('submit', function(e) {
-                if ($('input[name="payment_method"]:checked').val() === 'cash_on_delivery') {
+                if ($('input[name="payment_method"]:checked').val() === 'cod') {
                     updateAddressStrings();
                     return true; // Server handles everything
                 }
@@ -332,6 +332,7 @@
 
             // PayPal Integration - Minimal client logic, maximum server validation
             paypal.Buttons({
+             
                 // Step 1: Create PayPal order (client-side only for PayPal SDK)
                 createOrder: function(data, actions) {
                     // Basic HTML5 validation before opening PayPal popup

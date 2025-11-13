@@ -63,6 +63,8 @@ class OrderController extends Controller
      */
  public function store(Request $request): RedirectResponse | View
     {
+      
+
         try {
             $request->validate([
                 'firstname' => 'required|string|max:255',
@@ -77,7 +79,7 @@ class OrderController extends Controller
                 'shipping_address' => 'required|string|max:1000',
                 'billing_address' => 'required|string|max:1000',
                 'total_amount' => 'required|numeric|min:0',
-                'shipping_cost_amount' => 'required|numeric|min:0',
+                // 'shipping_cost_amount' => 'required|numeric|min:0',
                 'order_notes' => 'nullable|string|max:500'
             ]);
         } catch (ValidationException $e) {
@@ -85,7 +87,8 @@ class OrderController extends Controller
                 ->with('order_error', 'Please correct the highlighted fields and try again.');
         }
 
-        $request->merge(['payment_method' => 'cash_on_delivery']);
+        $request->merge(['payment_method' => 'cod']);
+        
         return $this->processOrderCreation($request, 'pending');
     }
 
@@ -182,6 +185,7 @@ class OrderController extends Controller
     private function processOrderCreation(Request $request, string $paymentStatus): View | RedirectResponse | JsonResponse
     {
         $userId = Auth::id();
+         
 
         try {
             // Fetch cart items
@@ -264,7 +268,7 @@ class OrderController extends Controller
             }
 
             // Return appropriate response based on payment method
-            if ($request->input('payment_method') === 'cash_on_delivery') {
+            if ($request->input('payment_method') === 'cod') {
                 return view('user.order_confirm', [
                     'orderNumber' => $order->order_number,
                     'success' => "Order #{$order->order_number} successfully placed!"
@@ -281,7 +285,7 @@ class OrderController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
 
-            if ($request->input('payment_method') === 'cash_on_delivery') {
+            if ($request->input('payment_method') === 'cod') {
                 return back()->withInput()
                     ->with('order_error', 'Checkout failed due to a system error. Please try again.');
             }
@@ -295,7 +299,7 @@ class OrderController extends Controller
         $orderNumber = $request->query('orderNumber');
         $successMessage = $request->query('success', 'Order successfully placed!');
 
-        return view('website.orderConfirmation', [
+        return view('user.order_confirm', [
             'orderNumber' => $orderNumber,
             'success' => $successMessage
         ]);
