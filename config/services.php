@@ -18,6 +18,12 @@ return [
         'token' => env('POSTMARK_TOKEN'),
     ],
 
+    
+    'stripe' => [
+    'secret' => env('STRIPE_SECRET_KEY'),
+    'public' => env('STRIPE_PUBLIC_KEY'),
+],
+
     'resend' => [
         'key' => env('RESEND_KEY'),
     ],

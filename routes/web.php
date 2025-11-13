@@ -91,6 +91,9 @@ Route::middleware(['auth'])->prefix('Checkout')->group(function () {
      
     Route::post('/',[OrderController::class, 'store'])->name('checkout.store');
     Route::post('/paypal/store',[OrderController::class, 'storePayPal'])->name('checkout.paypal.store');
+    Route::post('/paypal/store', [OrderController::class, 'storePayPal'])->name('checkout.paypal.store');
+   Route::post('/stripe/intent', [OrderController::class, 'createStripeIntent'])->name('checkout.stripe.intent');
+   Route::post('/stripe/store', [OrderController::class, 'storeStripe'])->name('checkout.stripe.store');
 });
 // ---------------- >> Order Routes << ----------------
 Route::middleware(['auth'])->prefix('Orders')->group(function () {

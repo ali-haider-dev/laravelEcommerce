@@ -113,7 +113,7 @@
                         </p>
                         {{-- Use the order number passed from the controller --}}
                         <strong class="text-3xl font-mono tracking-wider text-emerald-700 block select-all">
-                            #{{ $order_number ?? 'CONF-XXXXXX' }}
+                            #{{ $orderNumber ?? 'CONF-XXXXXX' }}
                         </strong>
                         <p class="text-sm text-gray-500 mt-3">
                             A detailed confirmation email has been sent to: 

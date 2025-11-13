@@ -26,6 +26,24 @@
     <meta name="theme-color" content="#ffffff" />
     <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}" />
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}" />
+
+    <style>
+        #card-element {
+            padding: 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background-color: white;
+        }
+
+        #card-element.StripeElement--focus {
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, .25);
+        }
+
+        #card-element.StripeElement--invalid {
+            border-color: #dc3545;
+        }
+    </style>
 </head>
 
 <body>
@@ -204,14 +222,40 @@
                                                     </div>
                                                 </div>
                                             </div>
+
+                                            <div class="card">
+                                                <div class="card-header">
+                                                    <div class="custom-control custom-radio">
+                                                        <input type="radio" id="stripe_radio" name="payment_method"
+                                                            value="stripe"
+                                                            class="custom-control-input payment-method-radio">
+                                                        <label class="custom-control-label" for="stripe_radio">
+                                                            Credit / Debit Card (Stripe)
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
 
+                                        <!-- COD Submit Button -->
                                         <button type="submit" id="cod-submit-button"
                                             class="btn btn-outline-primary-2 btn-order btn-block">
                                             <span class="">Place Order</span>
                                         </button>
 
+                                        <!-- PayPal Button Container -->
                                         <div id="paypal-button-container" style="margin-top: 15px; display: none;">
+                                        </div>
+
+                                        <!-- Stripe Card Container -->
+                                        <div id="stripe-card-container" style="display:none; margin-top: 15px;">
+                                            <div id="card-element" class="form-control"></div>
+                                            <div id="card-errors" role="alert"
+                                                style="color: #dc3545; margin-top: 10px; font-size: 14px;"></div>
+                                            <button type="button" id="stripe-pay-button"
+                                                class="btn btn-outline-primary-2 btn-order btn-block mt-3">
+                                                Pay Rs. {{ number_format($final_total, 2) }}
+                                            </button>
                                         </div>
 
                                     </div>
@@ -226,6 +270,9 @@
         @include('user.component.footer')
     </div>
 
+    <!-- Scripts -->
+    <script src="https://js.stripe.com/v3/"></script>
+
     <script src="{{ asset('assets/js/jquery.min.js') }}"></script>
     <script src="{{ asset('assets/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('assets/js/jquery.hoverIntent.min.js') }}"></script>
@@ -234,58 +281,83 @@
     <script src="{{ asset('assets/js/owl.carousel.min.js') }}"></script>
     <script src="{{ asset('assets/js/main.js') }}"></script>
 
+    <!-- Stripe.js -->
+
+    <!-- PayPal SDK -->
     <script
         src="https://www.paypal.com/sdk/js?client-id=AUOVyqA4VVr09Y0aGt6HFHb0VmLV-5sEcDqKOYI3VXN-U_B2zZ0AB2ZnGOJHfr3jTP_b5hNO1OAfxaJs&currency=USD">
     </script>
 
-    {{-- AXbmCprgHhbefFilx3Oy-8KocEGMBhNqOj01iirOVY1hdbpNG9ZcGmmi_Cw7AmeKHl7yA6veLp26SCSF --}}
     <script>
         $(document).ready(function() {
             const FINAL_TOTAL = {{ number_format($final_total, 2, '.', '') }};
             const COD_BUTTON = $('#cod-submit-button');
             const PAYPAL_CONTAINER = $('#paypal-button-container');
+            const STRIPE_CONTAINER = $('#stripe-card-container');
+            const STRIPE_PAY_BUTTON = $('#stripe-pay-button');
             const CHECKOUT_FORM = $('#checkout-form');
 
-            // Toast Helper - Pure UI feedback (minimal JS)
+            console.log('Checkout page loaded');
+
+            // ==================== Initialize Stripe ====================
+            const stripe = Stripe('{{ config('services.stripe.public') }}');
+            const elements = stripe.elements();
+            const cardElement = elements.create('card', {
+                style: {
+                    base: {
+                        fontSize: '16px',
+                        color: '#32325d',
+                        fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+                        '::placeholder': {
+                            color: '#aab7c4'
+                        }
+                    },
+                    invalid: {
+                        color: '#fa755a',
+                        iconColor: '#fa755a'
+                    }
+                }
+            });
+
+            let cardMounted = false;
+
+            // ==================== Toast Helper ====================
             function showToast(message, type = 'info') {
                 const existingToast = document.getElementById('toast');
                 if (existingToast) existingToast.remove();
 
                 const styles = {
                     success: {
-                        bg: 'bg-green-500/90',
-                        border: 'border-green-400',
-                        icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>'
+                        bg: '#28a745',
+                        icon: '✓'
                     },
                     error: {
-                        bg: 'bg-rose-500/90',
-                        border: 'border-rose-400',
-                        icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>'
+                        bg: '#dc3545',
+                        icon: '✕'
                     },
                     info: {
-                        bg: 'bg-blue-500/90',
-                        border: 'border-blue-400',
-                        icon: '<svg xmlns="http://www.w3.org/2000/svg" class="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 20h.01"/></svg>'
+                        bg: '#17a2b8',
+                        icon: 'ℹ'
                     }
                 };
                 const style = styles[type] || styles.info;
 
                 document.body.insertAdjacentHTML('beforeend',
-                    `<div id="toast" class="fixed top-5 right-5 z-[9999] flex items-center gap-3 px-5 py-3 rounded-xl shadow-lg border text-white backdrop-blur-lg animate-fadeIn ${style.bg} ${style.border}">
-                    ${style.icon}
-                    <span class="text-xl font-medium tracking-wide">${message}</span>
-                </div>`
+                    `<div id="toast" style="position: fixed; top: 20px; right: 20px; z-index: 9999; background: ${style.bg}; color: white; padding: 15px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 10px; min-width: 250px;">
+                        <span style="font-size: 20px; font-weight: bold;">${style.icon}</span>
+                        <span style="font-size: 16px;">${message}</span>
+                    </div>`
                 );
 
                 const toast = document.getElementById('toast');
                 setTimeout(() => {
                     toast.style.opacity = '0';
-                    toast.style.transform = 'translateX(5px)';
+                    toast.style.transition = 'opacity 0.5s';
                     setTimeout(() => toast.remove(), 500);
                 }, 3000);
             }
 
-            // Address string builder - Only for UI convenience, validation happens server-side
+            // ==================== Address String Builder ====================
             function updateAddressStrings() {
                 const address = [
                     $('input[name="address1"]').val(),
@@ -300,42 +372,197 @@
                 $('#billing_address_string').val(address);
             }
 
-            // Initialize - All fields enabled for server validation
-            $('.individual-address-field').prop('disabled', false);
-            $('.address-field').on('change keyup', updateAddressStrings);
+            $('input[name="address1"], input[name="address2"], input[name="city"], input[name="state"], input[name="postcode"], input[name="country"]')
+                .on('change keyup', updateAddressStrings);
             updateAddressStrings();
 
-            // COD Form Submission - Direct server-side processing
+            // ==================== COD Form Submission ====================
             CHECKOUT_FORM.on('submit', function(e) {
-                if ($('input[name="payment_method"]:checked').val() === 'cod') {
+                const selectedMethod = $('input[name="payment_method"]:checked').val();
+                console.log('Form submitted with method:', selectedMethod);
+
+                if (selectedMethod === 'cod') {
                     updateAddressStrings();
-                    return true; // Server handles everything
+                    return true; // Allow form submission
                 }
-                e.preventDefault(); // Block form submit for PayPal
+
+                // Prevent form submission for PayPal and Stripe
+                e.preventDefault();
                 return false;
             });
 
-            // Payment method toggle - Pure UI
+            // ==================== Payment Method Toggle ====================
             $('.payment-method-radio').on('change', function() {
                 const method = $(this).val();
-                if (method === 'paypal') {
-                    COD_BUTTON.hide();
-                    PAYPAL_CONTAINER.show();
-                    CHECKOUT_FORM.prop('action', '#');
-                } else {
+                console.log('Payment method changed to:', method);
+
+                // Hide all payment options first
+                STRIPE_CONTAINER.hide();
+                COD_BUTTON.hide();
+                PAYPAL_CONTAINER.hide();
+
+                // Show selected payment method
+                if (method === 'stripe') {
+                    if (!stripe) {
+                        showToast('Stripe is not configured. Please contact support.', 'error');
+                        $('#cod_radio').prop('checked', true).trigger('change');
+                        return;
+                    }
+                    console.log('Showing Stripe container');
+                    STRIPE_CONTAINER.show();
+
+                    // Mount Stripe card element only once
+                    if (!cardMounted) {
+                        console.log('Mounting Stripe card element');
+                        cardElement.mount('#card-element');
+                        cardMounted = true;
+
+                        // Handle real-time validation errors
+                        cardElement.on('change', function(event) {
+                            const displayError = document.getElementById('card-errors');
+                            if (event.error) {
+                                displayError.textContent = event.error.message;
+                            } else {
+                                displayError.textContent = '';
+                            }
+                        });
+                    }
+                } else if (method === 'cod') {
+                    console.log('Showing COD button');
                     COD_BUTTON.show();
-                    PAYPAL_CONTAINER.hide();
-                    CHECKOUT_FORM.prop('action', '{{ route('checkout.store') }}');
+                } else if (method === 'paypal') {
+                    console.log('Showing PayPal container');
+                    PAYPAL_CONTAINER.show();
                 }
             });
-            $('.payment-method-radio:checked').trigger('change');
 
-            // PayPal Integration - Minimal client logic, maximum server validation
+            // ==================== Stripe Payment Handler ====================
+            STRIPE_PAY_BUTTON.on('click', async function(e) {
+                e.preventDefault();
+                console.log('Stripe pay button clicked');
+
+                // Validate form
+                if (!CHECKOUT_FORM[0].checkValidity()) {
+                    showToast('Please fill out all required fields.', 'error');
+                    CHECKOUT_FORM[0].reportValidity();
+                    return;
+                }
+
+                updateAddressStrings();
+
+                // Disable button and show loading
+                STRIPE_PAY_BUTTON.prop('disabled', true).text('Processing...');
+                showToast('Creating payment...', 'info');
+
+                try {
+                    // Step 1: Create Payment Intent
+                    console.log('Creating payment intent...');
+                    const formData = CHECKOUT_FORM.serializeArray();
+                    formData.push({
+                        name: 'payment_method',
+                        value: 'stripe'
+                    });
+
+                    const intentResponse = await $.ajax({
+                        url: '{{ route('checkout.stripe.intent') }}',
+                        method: 'POST',
+                        data: $.param(formData),
+                        dataType: 'json',
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        }
+                    });
+
+                    if (!intentResponse.clientSecret) {
+                        throw new Error('Failed to create payment intent');
+                    }
+
+                    console.log('Payment Intent created successfully');
+
+                    // Step 2: Confirm Card Payment
+                    console.log('Confirming card payment...');
+                    const {
+                        error,
+                        paymentIntent
+                    } = await stripe.confirmCardPayment(
+                        intentResponse.clientSecret, {
+                            payment_method: {
+                                card: cardElement,
+                                billing_details: {
+                                    name: $('input[name="firstname"]').val() + ' ' + $(
+                                        'input[name="lastname"]').val(),
+                                    email: $('input[name="email"]').val(),
+                                    phone: $('input[name="phone_number"]').val(),
+                                    address: {
+                                        line1: $('input[name="address1"]').val(),
+                                        line2: $('input[name="address2"]').val(),
+                                        city: $('input[name="city"]').val(),
+                                        state: $('input[name="state"]').val(),
+                                        postal_code: $('input[name="postcode"]').val(),
+                                        country: 'US'
+                                    }
+                                }
+                            }
+                        }
+                    );
+
+                    if (error) {
+                        throw new Error(error.message);
+                    }
+
+                    console.log('Payment confirmed:', paymentIntent.status);
+
+                    // Step 3: Create Order on Server
+                    if (paymentIntent.status === 'succeeded') {
+                        showToast('Payment successful! Creating order...', 'success');
+
+                        const confirmData = formData.concat([{
+                            name: 'stripe_payment_intent_id',
+                            value: paymentIntent.id
+                        }]);
+
+                        const orderResponse = await $.ajax({
+                            url: '{{ route('checkout.stripe.store') }}',
+                            method: 'POST',
+                            data: $.param(confirmData),
+                            dataType: 'json',
+                            headers: {
+                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                            }
+                        });
+
+                        if (orderResponse.success && orderResponse.redirect_url) {
+                            showToast('Order placed successfully! Redirecting...', 'success');
+                            setTimeout(() => {
+                                window.location.href = orderResponse.redirect_url;
+                            }, 1000);
+                        } else {
+                            throw new Error('Order creation failed');
+                        }
+                    }
+
+                } catch (error) {
+                    console.error('Stripe payment error:', error);
+
+                    let errorMessage = 'Payment failed. Please try again.';
+
+                    if (error.responseJSON && error.responseJSON.error) {
+                        errorMessage = error.responseJSON.error;
+                    } else if (error.message) {
+                        errorMessage = error.message;
+                    }
+
+                    showToast(errorMessage, 'error');
+                    STRIPE_PAY_BUTTON.prop('disabled', false).text(
+                        'Pay Rs. {{ number_format($final_total, 2) }}');
+                }
+            });
+
+            // ==================== PayPal Integration ====================
+            console.log('Initializing PayPal buttons...');
             paypal.Buttons({
-             
-                // Step 1: Create PayPal order (client-side only for PayPal SDK)
                 createOrder: function(data, actions) {
-                    // Basic HTML5 validation before opening PayPal popup
+                    console.log('PayPal createOrder called');
                     if (!CHECKOUT_FORM[0].checkValidity()) {
                         showToast('Please fill out all required fields.', 'error');
                         CHECKOUT_FORM[0].reportValidity();
@@ -344,7 +571,6 @@
 
                     updateAddressStrings();
 
-                    // Create PayPal order (required by PayPal SDK)
                     return actions.order.create({
                         purchase_units: [{
                             amount: {
@@ -356,44 +582,32 @@
                     });
                 },
 
-                // Step 2: Payment approved - Capture and send to server
                 onApprove: function(data, actions) {
                     console.log('✅ PayPal payment approved. Order ID:', data.orderID);
 
-                    // Capture payment (required by PayPal SDK)
                     return actions.order.capture().then(function(details) {
                         console.log('✅ Payment captured:', details.status);
                         showToast('Payment successful! Creating your order...', 'success');
-
-                        // Send everything to server for validation and order creation
                         processServerPayment(data.orderID, details);
                     });
                 },
 
-                // Step 3: Payment cancelled
                 onCancel: function(data) {
                     console.log('❌ PayPal payment cancelled by user');
                     showToast('Payment was cancelled.', 'info');
                 },
 
-                // Step 4: PayPal SDK error
                 onError: function(err) {
                     console.error('❌ PayPal SDK Error:', err);
                     showToast('PayPal error occurred. Please try again.', 'error');
                 }
             }).render('#paypal-button-container');
 
-            /**
-             * SERVER-SIDE PROCESSING
-             * This function only sends data to server - all validation,
-             * order creation, and business logic happens on the server
-             */
             function processServerPayment(paypalOrderID, details) {
                 console.log('📤 Sending order to server for processing...');
 
-                updateAddressStrings(); // Final sync
+                updateAddressStrings();
 
-                // Collect all form data
                 const formData = CHECKOUT_FORM.serializeArray();
                 formData.push({
                     name: 'paypal_order_id',
@@ -403,11 +617,9 @@
                     value: 'paypal'
                 });
 
-                // Disable button to prevent double submission
                 PAYPAL_CONTAINER.find('button').prop('disabled', true);
                 showToast('Processing your order...', 'info');
 
-                // Send to server - Server does ALL the heavy lifting
                 $.ajax({
                     url: '{{ route('checkout.paypal.store') }}',
                     method: 'POST',
@@ -416,28 +628,24 @@
                     headers: {
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                     },
-                    timeout: 30000, // 30 second timeout
+                    timeout: 30000,
 
-                    // Success: Server validated everything and created order
                     success: function(response) {
                         console.log('✅ Server response:', response);
 
                         if (response.success === true && response.redirect_url) {
                             showToast('Order placed successfully! Redirecting...', 'success');
 
-                            // Small delay for user to see success message
                             setTimeout(function() {
                                 window.location.href = response.redirect_url;
                             }, 1000);
                         } else {
-                            // Unexpected response format
                             console.error('❌ Unexpected server response:', response);
                             showToast('Order processing error. Please contact support.', 'error');
                             PAYPAL_CONTAINER.find('button').prop('disabled', false);
                         }
                     },
 
-                    // Error: Server validation failed or system error
                     error: function(xhr, status, error) {
                         console.error('❌ Server Error:', {
                             status: xhr.status,
@@ -450,19 +658,16 @@
 
                         let message = 'Order processing failed. Please try again.';
 
-                        // Parse server error message
                         try {
                             const errorResponse = JSON.parse(xhr.responseText);
 
                             if (xhr.status === 422 && errorResponse.messages) {
-                                // Validation errors from server
                                 const errors = Object.values(errorResponse.messages).flat();
                                 message = 'Validation error: ' + errors.join('; ');
                             } else if (errorResponse.error) {
                                 message = errorResponse.error;
                             }
 
-                            // Log detailed error for debugging
                             if (errorResponse.details) {
                                 console.error('Server error details:', errorResponse.details);
                             }
@@ -470,7 +675,6 @@
                             console.error('Failed to parse error response:', e);
                         }
 
-                        // Network/timeout errors
                         if (xhr.status === 0) {
                             message = 'Network error. Please check your connection.';
                         } else if (status === 'timeout') {
@@ -481,6 +685,10 @@
                     }
                 });
             }
+
+            // Initialize payment method display
+            $('.payment-method-radio:checked').trigger('change');
+            console.log('Initial payment method set');
         });
     </script>
 </body>

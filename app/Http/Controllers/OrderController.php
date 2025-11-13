@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\ValidationException;
-
+use Stripe\Stripe; use Stripe\PaymentIntent;
 class OrderController extends Controller
 {
     /**
@@ -61,9 +61,9 @@ class OrderController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\RedirectResponse
      */
- public function store(Request $request): RedirectResponse | View
+    public function store(Request $request): RedirectResponse|View
     {
-      
+
 
         try {
             $request->validate([
@@ -88,7 +88,7 @@ class OrderController extends Controller
         }
 
         $request->merge(['payment_method' => 'cod']);
-        
+
         return $this->processOrderCreation($request, 'pending');
     }
 
@@ -182,10 +182,10 @@ class OrderController extends Controller
     }
 
 
-    private function processOrderCreation(Request $request, string $paymentStatus): View | RedirectResponse | JsonResponse
+    private function processOrderCreation(Request $request, string $paymentStatus): View|RedirectResponse|JsonResponse
     {
         $userId = Auth::id();
-         
+
 
         try {
             // Fetch cart items
@@ -303,5 +303,169 @@ class OrderController extends Controller
             'orderNumber' => $orderNumber,
             'success' => $successMessage
         ]);
+    }
+
+
+    public function createStripeIntent(Request $request): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'firstname' => 'required|string|max:255',
+                'lastname' => 'required|string|max:255',
+                'email' => 'required|email|max:255',
+                'address1' => 'required|string|max:255',
+                'city' => 'required|string|max:255',
+                'state' => 'required|string|max:255',
+                'postcode' => 'required|string|max:50',
+                'phone_number' => 'required|string|max:50',
+                'country' => 'required|string|max:255',
+                'shipping_address' => 'required|string|max:1000',
+                'billing_address' => 'required|string|max:1000',
+                'total_amount' => 'required|numeric|min:0',
+                'order_notes' => 'nullable|string|max:500'
+            ]);
+
+            Stripe::setApiKey(config('services.stripe.secret'));
+
+            $totalAmount = (float) $request->input('total_amount');
+            $userId = Auth::id();
+
+            // Create Payment Intent
+            $paymentIntent = PaymentIntent::create([
+                'amount' => intval($totalAmount * 100), // Convert to cents
+                'currency' => 'usd',
+                'metadata' => [
+                    'user_id' => $userId,
+                    'user_email' => Auth::user()->email,
+                    'order_method' => 'stripe'
+                ],
+                'description' => 'Molla Ecommerce Order'
+            ]);
+
+            Log::info('Stripe Payment Intent Created', [
+                'user_id' => $userId,
+                'intent_id' => $paymentIntent->id,
+                'amount' => $totalAmount
+            ]);
+
+            return response()->json([
+                'clientSecret' => $paymentIntent->client_secret
+            ], 200);
+
+        } catch (ValidationException $e) {
+            Log::warning('Stripe validation failed', ['errors' => $e->errors()]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Validation Failed',
+                'messages' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            Log::error('Stripe Payment Intent creation failed', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Payment initialization failed',
+                'details' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
+    /**
+     * Complete Stripe order after successful payment
+     */
+    public function storeStripe(Request $request): JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'stripe_payment_intent_id' => 'required|string|max:255',
+                'firstname' => 'required|string|max:255',
+                'lastname' => 'required|string|max:255',
+                'email' => 'required|email|max:255',
+                'address1' => 'required|string|max:255',
+                'city' => 'required|string|max:255',
+                'state' => 'required|string|max:255',
+                'postcode' => 'required|string|max:50',
+                'phone_number' => 'required|string|max:50',
+                'country' => 'required|string|max:255',
+                'shipping_address' => 'required|string|max:1000',
+                'billing_address' => 'required|string|max:1000',
+                'total_amount' => 'required|numeric|min:0',
+                'order_notes' => 'nullable|string|max:500'
+            ]);
+            Stripe::setApiKey(config('services.stripe.secret'));
+
+            // Verify payment intent
+            $paymentIntent = PaymentIntent::retrieve(
+                $validated['stripe_payment_intent_id']
+            );
+
+            if ($paymentIntent->status !== 'succeeded') {
+                throw new Exception('Payment not completed');
+            }
+
+            Log::info('Stripe Payment Verified', [
+                'user_id' => Auth::id(),
+                'payment_intent_id' => $paymentIntent->id
+            ]);
+
+            $request->merge(['payment_method' => 'stripe']);
+
+            // Create order using existing method
+            $result = $this->processOrderCreation($request, 'paid');
+
+            if ($result instanceof RedirectResponse) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Your cart is empty'
+                ], 400);
+            }
+
+            $orderNumber = null;
+            if ($result instanceof JsonResponse) {
+                $data = $result->getData(true);
+                $orderNumber = $data['orderNumber'] ?? null;
+            }
+
+            if (!$orderNumber) {
+                throw new Exception('Order number not generated');
+            }
+
+            Log::info('Stripe Order Created', [
+                'order_number' => $orderNumber,
+                'user_id' => Auth::id()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'orderNumber' => $orderNumber,
+                'redirect_url' => route('orders.confirmation', [
+                    'orderNumber' => $orderNumber,
+                    'success' => 'Order successfully placed!'
+                ])
+            ], 200);
+
+        } catch (ValidationException $e) {
+            Log::warning('Stripe order validation failed', ['errors' => $e->errors()]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Validation Failed',
+                'messages' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            Log::error('Stripe order creation failed', [
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Order creation failed',
+                'details' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
     }
 }
