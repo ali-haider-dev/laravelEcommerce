@@ -2,15 +2,18 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\OrderStatus;
 use App\Models\Order;
 use App\Models\User;
 
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\Rule;
+use Mail;
 use Storage;
 class AdminController extends Controller
 {
@@ -88,50 +91,81 @@ class AdminController extends Controller
      */
 
     public function filterOrder(Request $request)
-{
-    $query = Order::with('user');
+    {
+        $query = Order::with('user');
 
-    // Search by order number or ID
-    if ($request->filled('search')) {
-        $search = $request->search;
-        $query->where(function($q) use ($search) {
-            $q->where('order_number', 'LIKE', "%{$search}%")
-              ->orWhere('id', 'LIKE', "%{$search}%");
-        });
+        // Search by order number or ID
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('order_number', 'LIKE', "%{$search}%")
+                    ->orWhere('id', 'LIKE', "%{$search}%");
+            });
+        }
+
+        // Filter by payment status
+        if ($request->filled('payment_status')) {
+            $query->where('payment_status', $request->payment_status);
+        }
+
+        // Filter by order status
+        if ($request->filled('order_status')) {
+            $query->where('order_status', $request->order_status);
+        }
+
+        $orders = $query->orderBy('created_at', 'desc')->paginate(10);
+
+        return view('orders.index', compact('orders'));
     }
-
-    // Filter by payment status
-    if ($request->filled('payment_status')) {
-        $query->where('payment_status', $request->payment_status);
-    }
-
-    // Filter by order status
-    if ($request->filled('order_status')) {
-        $query->where('order_status', $request->order_status);
-    }
-
-    $orders = $query->orderBy('created_at', 'desc')->paginate(10);
-
-    return view('orders.index', compact('orders'));
-}
 
     public function updateOrderStatus(Request $request, Order $order)
-{
-    $request->validate([
-        'order_status' => 'required|in:pending,processing,shipped,delivered,cancelled'
-    ]);
+    {
 
-    $order->update([
-        'order_status' => $request->order_status,
-        'updated_by' => Auth::id()
-    ]);
 
-    return redirect()->back()->with('success', 'Order status updated successfully!');
-}
+        $request->validate([
+            'order_status' => 'required|in:pending,processing,shipped,delivered,cancelled'
+        ]);
+
+        $current = $order->order_status;
+        $requested = $request->order_status;
+        $allowedTransitions = [
+            'pending' => ['processing', 'cancelled'],
+            'processing' => ['shipped', 'cancelled'],
+            'shipped' => ['delivered', 'cancelled'],
+            'delivered' => [], // no backward or cancel allowed
+            'cancelled' => [],
+        ];
+        if (!in_array($requested, $allowedTransitions[$current])) {
+            return redirect()->back()->with('error', "You cannot change status from '$current' to '$requested'.");
+        }
+        if ($current === $requested) {
+            return redirect()->back()->with('error', "The order is already in '$current' status.");
+        }
+
+        $order->update([
+            'order_status' => $request->order_status,
+            'updated_by' => Auth::id()
+        ]);
+
+        try {
+            $user = User::find($order->user_id);
+
+            // Send email notification to the user about the order status update
+            Mail::to($user->email)->send(new OrderStatus($order));
+            $message = ' An email notification has been sent to the customer.';
+        } catch (Exception $e) {
+            dd($e->getMessage());
+            Log::error('Failed to send order status email: ' . $e->getMessage());
+            // Optionally, you can choose to notify the admin about the email failure
+            $message = ' However, failed to send email notification to the customer.';
+        }
+
+        return redirect()->back()->with('success', 'Order status updated successfully!' . $message);
+    }
     public function showOrders()
     {
         //
-         // Retrieve all orders ordered by creation date
+        // Retrieve all orders ordered by creation date
         $orders = Order::orderBy('created_at', 'desc')->paginate(10);
 
         return view('orders.index', compact('orders'));
@@ -161,7 +195,7 @@ class AdminController extends Controller
             'file' => ['nullable', 'image', 'mimes:jpg,jpeg,png,gif', 'max:5120'],
         ];
         $validated = $request->validate($rules);
-  
+
         try {
 
             // Handle avatar upload
