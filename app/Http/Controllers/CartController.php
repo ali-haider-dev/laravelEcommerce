@@ -151,40 +151,36 @@ class CartController extends Controller
     }
 
     public function destroy(Request $request, $id): RedirectResponse|JsonResponse
-    {
-        if (!Auth::check()) {
-            // If unauthenticated, always return JSON error (standard API practice)
-            return response()->json(['message' => 'Unauthenticated.'], 401);
-        }
-
-        $userId = Auth::id();
-
-        // 1. Find the cart item, ensuring it belongs to the authenticated user
-        $cartItem = Cart::where('id', $id)
-            ->where('user_id', $userId)
-            ->first();
-
-        if (!$cartItem) {
-            // If not found, redirect with an error flash message
-            return redirect()->back()->with(['error' => 'Cart item not found.']);
-        }
-
-        $message = '';
-
-        // 2. Implement the quantity logic
-        if ($cartItem->quantity <= 1 && $request->has('delete')) {
-            // Quantity is 1 or less, delete the entire cart item
-            $cartItem->delete();
-            $message = "Product successfully removed from cart.";
-        } else {
-
-            // Quantity is greater than 1, decrement it
-            $cartItem->quantity -= 1;
-            $cartItem->save();
-            $message = "One unit of the product removed from the cart.";
-        }
-
-        // 3. Redirect back with the appropriate success message
-        return redirect()->back()->with(['success' => $message]);
+{
+    if (!Auth::check()) {
+        return response()->json(['message' => 'Unauthenticated.'], 401);
     }
+
+    $userId = Auth::id();
+
+    $cartItem = Cart::where('id', $id)
+        ->where('user_id', $userId)
+        ->first();
+
+    if (!$cartItem) {
+        return redirect()->back()->with(['error' => 'Cart item not found.']);
+    }
+
+    $message = '';
+
+    // Cast quantity to int
+    $quantity = (int) $cartItem->quantity;
+
+    if ($quantity === 1 || $request->has('delete')) {
+        $cartItem->delete();
+        $message = "Product successfully removed from cart.";
+    } else {
+        $cartItem->quantity -= 1;
+        $cartItem->save();
+        $message = "One unit of the product removed from the cart.";
+    }
+
+    return redirect()->back()->with(['success' => $message]);
+}
+
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Order;
 use App\Models\User;
 
 use Illuminate\Http\Request;
@@ -85,9 +86,55 @@ class AdminController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+
+    public function filterOrder(Request $request)
+{
+    $query = Order::with('user');
+
+    // Search by order number or ID
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->where(function($q) use ($search) {
+            $q->where('order_number', 'LIKE', "%{$search}%")
+              ->orWhere('id', 'LIKE', "%{$search}%");
+        });
+    }
+
+    // Filter by payment status
+    if ($request->filled('payment_status')) {
+        $query->where('payment_status', $request->payment_status);
+    }
+
+    // Filter by order status
+    if ($request->filled('order_status')) {
+        $query->where('order_status', $request->order_status);
+    }
+
+    $orders = $query->orderBy('created_at', 'desc')->paginate(10);
+
+    return view('orders.index', compact('orders'));
+}
+
+    public function updateOrderStatus(Request $request, Order $order)
+{
+    $request->validate([
+        'order_status' => 'required|in:pending,processing,shipped,delivered,cancelled'
+    ]);
+
+    $order->update([
+        'order_status' => $request->order_status,
+        'updated_by' => Auth::id()
+    ]);
+
+    return redirect()->back()->with('success', 'Order status updated successfully!');
+}
+    public function showOrders()
     {
         //
+         // Retrieve all orders ordered by creation date
+        $orders = Order::orderBy('created_at', 'desc')->paginate(10);
+
+        return view('orders.index', compact('orders'));
     }
 
     /**

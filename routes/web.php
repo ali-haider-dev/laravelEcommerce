@@ -83,6 +83,9 @@ Route::middleware(['auth'])->prefix('Checkout')->group(function () {
 
             return $item->quantity * ($item->product->price ?? 0);
         });
+        if ($cartItems->isEmpty()) {
+            return redirect()->route('user')->with('error', '⚠️ Your cart is empty. Please add items to proceed to checkout.');
+        }
         return view('user.checkout', [
             'cartItems' => $cartItems,
             'subtotal' => $cartTotal,
@@ -135,8 +138,12 @@ Route::middleware(['auth', 'admin'])->group(function () {
 
         // Reports Route (Admin-Only - accessible via /Products/reports)
         Route::get('/reports', [ReportController::class, 'showReport'])->name('reports.show');
-
     });
+
+    //========================= Admin Orders Routes =========================
+    Route::get('AdminDashboard/orders', [AdminController::class, 'showOrders'])->name('admin.orders');
+    Route::get('AdminDashboard/orders/search', [AdminController::class, 'filterOrder'])->name('admin.searchOrders');
+    Route::patch('AdminDashboard/orders/{order}/update-status', [AdminController::class, 'updateOrderStatus'])->name('admin.updateOrderStatus');
 });
 
 require __DIR__ . '/auth.php';
