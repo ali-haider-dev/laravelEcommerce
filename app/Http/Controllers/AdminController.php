@@ -171,6 +171,7 @@ class AdminController extends Controller
         return view('orders.index', compact('orders'));
     }
 
+
     /**
      * Show the form for editing the specified resource.
      */

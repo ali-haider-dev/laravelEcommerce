@@ -99,6 +99,13 @@
                     <span class="ml-3">Orders</span>
                 </a>
             </li>
+              <li class="nav-item">
+                <a class="nav-link flex items-center p-3 mx-3 rounded-lg text-sm font-medium hover:bg-indigo-700/20 transition-colors duration-150"
+                    href="{{ route('admin.categories') }}">
+                    <i class="fa-solid fa-boxes-stacked fa-fw w-5"></i>
+                    <span class="ml-3">Categories</span>
+                </a>
+            </li>
             <!-- Nav Item - Reports (Dropdown/Collapse Menu) -->
             <li class="nav-item relative">
                 <a id="reportsDropdownToggle"
@@ -126,7 +133,7 @@
                     <a class="dropdown-item block px-5 py-2 text-sm text-gray-200 hover:bg-indigo-700/30"
                         href="{{ route('reports.show', ['type' => 'category']) }}">Revenue by Category</a>
                     <a class="dropdown-item block px-5 py-2 text-sm text-gray-200 hover:bg-indigo-700/30"
-                        href="{{ route('reports.show', ['type' => 'categoty_yearly']) }}">Revenue by Cat & Year</a>
+                        href="{{ route('reports.show', ['type' => 'category_yearly']) }}">Revenue by Cat & Year</a>
                 </div>
             </li>
 

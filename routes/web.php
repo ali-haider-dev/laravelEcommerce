@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ProfileController;
@@ -144,6 +145,13 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('AdminDashboard/orders', [AdminController::class, 'showOrders'])->name('admin.orders');
     Route::get('AdminDashboard/orders/search', [AdminController::class, 'filterOrder'])->name('admin.searchOrders');
     Route::patch('AdminDashboard/orders/{order}/update-status', [AdminController::class, 'updateOrderStatus'])->name('admin.updateOrderStatus');
+
+    //======================== Admin Category Routes =========================
+    Route::get('AdminDashboard/categories',[CategoryController::class,'index'])->name('admin.categories');
+     Route::get('AdminDashboard/categories/filter',[CategoryController::class,'filterCategory'])->name('categories.show');
+      Route::post('AdminDashboard/categories/create',[CategoryController::class,'store'])->name('categories.store');
+       Route::put('AdminDashboard/categories/{category}',[CategoryController::class,'update'])->name('categories.update');
+           Route::delete('AdminDashboard/categories/{category}',[CategoryController::class,'destroy'])->name('categories.delete');
 });
 
 require __DIR__ . '/auth.php';

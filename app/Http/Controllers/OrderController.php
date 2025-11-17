@@ -188,6 +188,7 @@ class OrderController extends Controller
 
 
         try {
+            DB::beginTransaction();
             // Fetch cart items
             $cartItems = Cart::where('user_id', $userId)->with('product')->get();
 
@@ -196,7 +197,6 @@ class OrderController extends Controller
                     ->with('error', 'Your cart is empty. Please add items before checking out.');
             }
 
-            DB::beginTransaction();
 
             $totalAmount = 0;
             $orderItemsData = [];
@@ -277,7 +277,9 @@ class OrderController extends Controller
 
             // For PayPal: return JSON with order number
             return response()->json(['orderNumber' => $order->order_number], 200);
-        } catch (Exception $e) {
+        } 
+        
+        catch (Exception $e) {
             DB::rollBack();
             Log::error('Order creation failed', [
                 'user_id' => $userId,

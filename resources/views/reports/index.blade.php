@@ -1,8 +1,5 @@
 <x-app-layout>
-    <x-slot name="header">
-        <h1 class="font-bold text-3xl leading-relaxed text-gray-600">Sales Dashboard</h1>
-        <p class="text-sm font-semibold text-gray-600">A comprehensive sales analysis </p>
-    </x-slot>
+
     <div class="container mx-auto p-6">
 
 

@@ -67,13 +67,13 @@
                                     <div class="row">
                                         <div class="col-sm-6">
                                             <label>First Name *</label>
-                                            <input type="text" class="form-control" name="firstname" required
+                                            <input type="text" class="form-control" name="firstname"  
                                                 value="{{ old('firstname', $user_data['firstname'] ?? '') }}" />
                                             <x-input-error :messages="$errors->get('firstname')" class="mt-2" />
                                         </div>
                                         <div class="col-sm-6">
                                             <label>Last Name *</label>
-                                            <input type="text" class="form-control" name="lastname" required
+                                            <input type="text" class="form-control" name="lastname"  
                                                 value="{{ old('lastname', $user_data['lastname'] ?? '') }}" />
                                             <x-input-error :messages="$errors->get('lastname')" class="mt-2" />
                                         </div>
@@ -85,11 +85,11 @@
 
                                     <label>Country *</label>
                                     <input type="text" class="form-control" name="country" value="Pakistan"
-                                        required />
+                                          />
                                     <x-input-error :messages="$errors->get('country')" class="mt-2" />
 
                                     <label>Street address *</label>
-                                    <input type="text" class="form-control" name="address1" required
+                                    <input type="text" class="form-control" name="address1"  
                                         placeholder="House number and Street name"
                                         value="{{ old('address1', $user_data['address'] ?? '') }}" />
                                     <x-input-error :messages="$errors->get('address1')" class="mt-2" />
@@ -100,13 +100,13 @@
                                     <div class="row">
                                         <div class="col-sm-6">
                                             <label>Town / City *</label>
-                                            <input type="text" class="form-control" name="city" required
+                                            <input type="text" class="form-control" name="city"  
                                                 value="{{ old('city', $user_data['city'] ?? '') }}" />
                                             <x-input-error :messages="$errors->get('city')" class="mt-2" />
                                         </div>
                                         <div class="col-sm-6">
                                             <label>State / County *</label>
-                                            <input type="text" class="form-control" name="state" required
+                                            <input type="text" class="form-control" name="state"  
                                                 value="{{ old('state') }}" />
                                             <x-input-error :messages="$errors->get('state')" class="mt-2" />
                                         </div>
@@ -115,13 +115,13 @@
                                     <div class="row">
                                         <div class="col-sm-6">
                                             <label>Postcode / ZIP *</label>
-                                            <input type="text" class="form-control" name="postcode" required
+                                            <input type="text" class="form-control" name="postcode"  
                                                 value="{{ old('postcode', $user_data['postcode'] ?? '') }}" />
                                             <x-input-error :messages="$errors->get('postcode')" class="mt-2" />
                                         </div>
                                         <div class="col-sm-6">
                                             <label>Phone *</label>
-                                            <input type="tel" class="form-control" name="phone_number" required
+                                            <input type="tel" class="form-control" name="phone_number"  
                                                 value="{{ old('phone_number', $user_data['phone_number'] ?? '') }}" />
                                             <x-input-error :messages="$errors->get('phone_number')" class="mt-2" />
                                         </div>
@@ -272,6 +272,9 @@
 
     <!-- Scripts -->
     <script src="https://js.stripe.com/v3/"></script>
+      <script
+        src="https://www.paypal.com/sdk/js?client-id={{ config('services.paypal.client_id') }}&currency=USD">
+    </script>
 
     <script src="{{ asset('assets/js/jquery.min.js') }}"></script>
     <script src="{{ asset('assets/js/bootstrap.bundle.min.js') }}"></script>
@@ -281,12 +284,8 @@
     <script src="{{ asset('assets/js/owl.carousel.min.js') }}"></script>
     <script src="{{ asset('assets/js/main.js') }}"></script>
 
-    <!-- Stripe.js -->
 
-    <!-- PayPal SDK -->
-    <script
-        src="https://www.paypal.com/sdk/js?client-id=AUOVyqA4VVr09Y0aGt6HFHb0VmLV-5sEcDqKOYI3VXN-U_B2zZ0AB2ZnGOJHfr3jTP_b5hNO1OAfxaJs&currency=USD">
-    </script>
+  
 
     <script>
         $(document).ready(function() {
@@ -443,7 +442,7 @@
 
                 // Validate form
                 if (!CHECKOUT_FORM[0].checkValidity()) {
-                    showToast('Please fill out all required fields.', 'error');
+                    showToast('Please fill out all   fields.', 'error');
                     CHECKOUT_FORM[0].reportValidity();
                     return;
                 }
@@ -564,7 +563,7 @@
                 createOrder: function(data, actions) {
                     console.log('PayPal createOrder called');
                     if (!CHECKOUT_FORM[0].checkValidity()) {
-                        showToast('Please fill out all required fields.', 'error');
+                        showToast('Please fill out all   fields.', 'error');
                         CHECKOUT_FORM[0].reportValidity();
                         return Promise.reject(new Error('Form validation failed'));
                     }

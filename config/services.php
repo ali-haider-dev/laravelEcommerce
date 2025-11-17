@@ -18,11 +18,16 @@ return [
         'token' => env('POSTMARK_TOKEN'),
     ],
 
-    
+
     'stripe' => [
-    'secret' => env('STRIPE_SECRET_KEY'),
-    'public' => env('STRIPE_PUBLIC_KEY'),
-],
+        'secret' => env('STRIPE_SECRET_KEY'),
+        'public' => env('STRIPE_PUBLIC_KEY'),
+    ],
+
+    'paypal' => [
+        'client_id' => env('PAYPAL_CLIENT_ID'),
+        'client_secret' => env('PAYPAL_CLIENT_SECRET'),
+    ],
 
     'resend' => [
         'key' => env('RESEND_KEY'),

@@ -13,8 +13,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
 
-    Route::redirect('/login', '/');
-    Route::redirect('/register', '/');
+    // Route::redirect('/login', '/');
+    // Route::redirect('/register', '/');
 
     Route::post('register', [RegisteredUserController::class, 'store'])->name('register');
 
