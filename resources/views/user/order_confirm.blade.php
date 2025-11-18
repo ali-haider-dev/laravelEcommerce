@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -8,9 +6,20 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>Order Confirmed | Molla eCommerce</title>
-    <!-- Assuming your project uses Tailwind CSS or includes its classes in the compiled assets -->
     
-    <!-- Custom Styles for Green Theme and Confetti -->
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/images/icons/apple-touch-icon.png') }}">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('assets/images/icons/favicon-32x32.png') }}">
+    
+    <link rel="stylesheet" href="{{ asset('assets/vendor/line-awesome/line-awesome/line-awesome/css/line-awesome.min.css') }}">
+    
+    <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/plugins/owl-carousel/owl.carousel.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/plugins/magnific-popup/magnific-popup.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/plugins/jquery.countdown.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/skins/skin-demo-4.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/css/demos/demo-4.css') }}">
+    
     <style>
         .sparkle-container {
             position: fixed;
@@ -38,7 +47,7 @@
             animation: confetti-fall 5s linear infinite;
         }
         
-        /* Generate multiple sparkles with varying delay, duration, and position */
+        /* Generate multiple sparkles with varying delay, duration, and position (Blade will compile this) */
         @for ($i = 1; $i <= 50; $i++)
             .sparkle:nth-child({{ $i }}) {
                 left: {{ rand(0, 100) }}vw;
@@ -55,25 +64,15 @@
             }
         @endfor
     </style>
-
-    <!-- Standard Molla Assets (kept for styling consistency) -->
-    <link rel="apple-touch-icon" sizes="180x180" href="assets/images/icons/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="assets/images/icons/favicon-32x32.png">
-    <link rel="stylesheet" href="assets/vendor/line-awesome/line-awesome/line-awesome/css/line-awesome.min.css">
-    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
-    <link rel="stylesheet" href="assets/css/plugins/owl-carousel/owl.carousel.css">
-    <link rel="stylesheet" href="assets/css/plugins/magnific-popup/magnific-popup.css">
-    <link rel="stylesheet" href="assets/css/plugins/jquery.countdown.css">
-    <link rel="stylesheet" href="assets/css/style.css">
-    <link rel="stylesheet" href="assets/css/skins/skin-demo-4.css">
-    <link rel="stylesheet" href="assets/css/demos/demo-4.css">
 </head>
 
 <body>
     <div class="page-wrapper">
-        @include('user.component.header')
+        {{-- Ensure these includes are correct for your directory structure --}}
+        @include('user.component.header') 
 
         <main class="main">
+            {{-- Note: 'bg-gray-50', 'min-h-[50vh]', 'flex', 'items-center', 'justify-center', 'shadow-xl' are Tailwind classes. Ensure Tailwind is linked/compiled. --}}
             <div class="page-content bg-gray-50 min-h-[50vh] flex items-center justify-center py-20">
                 <div class="container text-center max-w-2xl bg-white shadow-xl rounded-xl p-10 md:p-16">
                     
@@ -94,10 +93,10 @@
                             Order Successfully Placed!
                         </h1>
                         
-                        {{-- Display the flash message or a default --}}
-                        @if (session('success'))
+                        {{-- 🚨 FIXED: Display the success message passed as a variable ($success) --}}
+                        @if (isset($success))
                             <p class="lead text-xl text-emerald-600 mb-8 font-medium">
-                                {{ session('success') }}
+                                {{ $success }}
                             </p>
                         @else
                             {{-- Fallback message --}}
@@ -111,7 +110,7 @@
                         <p class="text-lg text-gray-700 font-semibold mb-2">
                             Your **Order Reference Number** is: 
                         </p>
-                        {{-- Use the order number passed from the controller --}}
+                        {{-- Display the order number passed from the controller ($orderNumber) --}}
                         <strong class="text-3xl font-mono tracking-wider text-emerald-700 block select-all">
                             #{{ $orderNumber ?? 'CONF-XXXXXX' }}
                         </strong>
@@ -122,11 +121,13 @@
                     </div>
                     
                     <div class="space-y-4 sm:space-y-0 sm:space-x-4 justify-center">
-                       
+                        
                         <a href="{{ route('user') }}" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-md text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition duration-150">
                             <i class="la la-shopping-basket mr-2 text-xl"></i>
                             Continue Shopping
                         </a>
+                        
+                    
                     </div>
                     
                 </div>
@@ -135,20 +136,19 @@
 
         @include('user.component.footer')
     </div>
-    <!-- Plugins JS File -->
-    <script src="assets/js/jquery.min.js"></script>
-    <script src="assets/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/js/jquery.hoverIntent.min.js"></script>
-    <script src="assets/js/jquery.waypoints.min.js"></script>
-    <script src="assets/js/superfish.min.js"></script>
-    <script src="assets/js/owl.carousel.min.js"></script>
-    <script src="assets/js/bootstrap-input-spinner.js"></script>
-    <script src="assets/js/jquery.plugin.min.js"></script>
-    <script src="assets/js/jquery.magnific-popup.min.js"></script>
-    <script src="assets/js/jquery.countdown.min.js"></script>
-    <!-- Main JS File -->
-    <script src="assets/js/main.js"></script>
-    <script src="assets/js/demos/demo-4.js"></script>
+    
+    <script src="{{ asset('assets/js/jquery.min.js') }}"></script>
+    <script src="{{ asset('assets/js/bootstrap.bundle.min.js') }}"></script>
+    <script src="{{ asset('assets/js/jquery.hoverIntent.min.js') }}"></script>
+    <script src="{{ asset('assets/js/jquery.waypoints.min.js') }}"></script>
+    <script src="{{ asset('assets/js/superfish.min.js') }}"></script>
+    <script src="{{ asset('assets/js/owl.carousel.min.js') }}"></script>
+    <script src="{{ asset('assets/js/bootstrap-input-spinner.js') }}"></script>
+    <script src="{{ asset('assets/js/jquery.plugin.min.js') }}"></script>
+    <script src="{{ asset('assets/js/jquery.magnific-popup.min.js') }}"></script>
+    <script src="{{ asset('assets/js/jquery.countdown.min.js') }}"></script>
+    <script src="{{ asset('assets/js/main.js') }}"></script>
+    <script src="{{ asset('assets/js/demos/demo-4.js') }}"></script>
 </body>
 
 </html>

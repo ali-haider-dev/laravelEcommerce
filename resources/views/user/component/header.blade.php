@@ -1,9 +1,4 @@
 @php
-    // --- STATIC DUMMY DATA FOR FRONT-END PRESENTATION ---
-    // In a real Laravel application, this data would be passed from a controller.
-
-    // 1. Static Categories (for the dropdown menu)
-
     if (Auth::check()) {
         // Eager load the 'product' relationship to access details like name and price
         $cartItems = App\Models\Cart::where('user_id', Auth::id())->with('product')->get();
@@ -165,7 +160,7 @@
                     <div class="dropdown-menu dropdown-menu-right">
                         <div class="dropdown-cart-products">
                             {{-- Blade @if/@foreach structure to loop over static cart items --}}
-                            @if (!empty($cartItems))
+                          @if ($cartItems->isNotEmpty())
                                 @foreach ($cartItems as $item)
                               
                                     <div class="product">
@@ -205,7 +200,7 @@
                         </div>
 
                         {{-- Cart total and action buttons (Uses Static Cart Data) --}}
-                        @if (!empty($cartItems))
+                     @if ($cartItems->isNotEmpty())
                             <div class="dropdown-cart-total">
                                 <span>Total</span>
                                 <span class="cart-total-price">${{ number_format($cartTotal, 2) }}</span>
