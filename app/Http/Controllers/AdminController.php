@@ -49,6 +49,7 @@ class AdminController extends Controller
             'password' => ['required', 'confirmed', Password::defaults()],
             // File validation: Optional, max 5MB (5120 KB), accepted formats
             'file' => ['nullable', 'image', 'mimes:pdf,doc,docx,jpg,png', 'max:5120'],
+            'designation' => ['required', 'string', 'max:255'],
         ]);
 
         try {
@@ -61,7 +62,6 @@ class AdminController extends Controller
                 // Aur saved file ka path (user_uploads/filename.ext) $filePath mein store karna
                 $filePath = $request->file('file')->store('user_uploads', 'public');
             }
-
             // 2. Naye user ko database mein create karna
             $user = User::create([
                 'name' => $validatedData['name'],
@@ -69,6 +69,7 @@ class AdminController extends Controller
                 // Password ko secure tareeqe se hash (encrypt) karna zaroori hai
                 'password' => Hash::make($validatedData['password']),
                 // File ka rasta database column mein save karna
+                "designation"=>$request->designation,
                 'profile_document_path' => $filePath,
             ]);
 
@@ -77,7 +78,7 @@ class AdminController extends Controller
                 ->route('dashboard')
                 ->with('success', 'user "' . $user->name . '" data updated successfully.');
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Agar koi error aata hai, to handle karna
             Log::error('User Store Error: ' . $e->getMessage());
             return back()
@@ -223,7 +224,7 @@ class AdminController extends Controller
             $user->save();
 
             return redirect()->route('dashboard')->with('success', '✅ User updated successfully!');
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('User update failed: ' . $e->getMessage());
             return back()
                 ->withInput()
