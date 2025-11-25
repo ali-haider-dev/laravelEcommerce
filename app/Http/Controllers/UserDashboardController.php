@@ -43,7 +43,7 @@ class UserDashboardController extends Controller
         // Fetch categories with products
         $data['categories'] = Category::with([
             'products' => function ($query) {
-                $query->latest(); // Latest products first
+                $query->where('isActive', true); // Latest products first
             }
         ])->get();
 

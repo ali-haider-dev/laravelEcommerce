@@ -33,14 +33,14 @@ class ProductController extends Controller
         $request->validate(rules: [
             'product_name' => 'required|string|max:255',
             'description' => 'required|string',
-            'price' => 'required|numeric|min:0',
+            'price' => 'required|numeric|min:1',
             'category_id' => 'required|exists:tbl_categories,id',
             'attachments' => 'required|array|min:1',
-            'attachments.*' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'attachments.*' => 'required|file|mimes:jpg,jpeg,png|max:2048',
             'isHot' => 'nullable|boolean',
             'isActive' => 'nullable|boolean',
         ]);
-
+        
         
         $paths = [];
         if ($request->hasFile('attachments')) {

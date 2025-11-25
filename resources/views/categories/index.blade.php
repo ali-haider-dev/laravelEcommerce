@@ -450,7 +450,7 @@
         const addModal = document.getElementById('add-category-modal');
         const modalForm = document.getElementById('edit-category-form');
         const nameInput = document.getElementById('edit_category_name');
-        // const slugInput = document.getElementById('edit_category_slug'); // Adjust to your actual slug field name
+
 
 
 
