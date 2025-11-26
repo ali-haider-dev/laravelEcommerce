@@ -494,7 +494,6 @@
     <script src={{ asset('assets/js/main.js') }}></script>
     <script src={{ asset('assets/js/demos/demo-4.js') }}></script>
 
-    {{-- Static JavaScript is kept, AJAX call is removed from the second script as it depends on server-side logic --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.trigger-login').forEach(function(btn) {
@@ -506,8 +505,7 @@
         });
     </script>
     <script>
-        // NOTE: The original AJAX cart logic is removed because it relies on a PHP backend (`functions/add-to-cart.php`).
-        // For a static Blade page, we only keep the visual part of the click (if needed).
+
         $(document).on('click', '.add-to-cart', function(e) {
             e.preventDefault();
 
@@ -528,8 +526,6 @@
                 addButton.prop('disabled', false)
                     .find('i').removeClass(successIconClass).addClass(originalIconClass);
             }, 3000);
-
-            // Commented out the redirect: window.location.href = 'index.php';
         });
     </script>
 
